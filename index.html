@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ピッチリング | 発声トレーニング & テクニック分析</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+
+:root{
+
+--ink: #171a2b;
+
+--surface: #22273f;
+
+--surface-2: #2c3352;
+
+--gold: #e3a94c;
+
+--coral: #e2705f;
+
+--cool: #5b9dd6;
+
+--text: #f3efe6;
+
+--text-dim: #a6acc9;
+
+}
+
+*{ box-sizing: border-box; }
+
+html,body{ margin:0; padding:0; }
+
+body{
+
+background: radial-gradient(ellipse at 50% -10%, #2a3050 0%, var(--ink) 55%);
+
+color: var(--text);
+
+font-family: 'Inter', sans-serif;
+
+min-height: 100vh;
+
+display:flex;
+
+justify-content:center;
+
+padding: 24px 16px 40px;
+
+}
+
+.app{ width:100%; max-width: 440px; }
+
+header{ text-align:center; margin-bottom: 16px; }
+
+header h1{
+
+font-family:'Fraunces', serif;
+
+font-weight:600;
+
+font-size: 24px;
+
+margin: 0 0 4px;
+
+}
+
+header p{ margin:0; font-size: 13px; color: var(--text-dim); }
+
+
+
+.tabs{
+
+display:flex;
+
+gap: 6px;
+
+background: var(--surface);
+
+border-radius: 14px;
+
+padding: 5px;
+
+margin-bottom: 18px;
+
+}
+
+.tabs button{
+
+flex:1;
+
+padding: 10px 0;
+
+border: none;
+
+border-radius: 10px;
+
+background: transparent;
+
+color: var(--text-dim);
+
+font-family:'Inter', sans-serif;
+
+font-weight: 600;
+
+font-size: 13px;
+
+cursor: pointer;
+
+}
+
+.tabs button.active{ background: var(--gold); color: #1b1a12; }
+
+.tabs button:focus-visible{ outline:2px solid var(--text); outline-offset:2px; }
+
+
+
+.panel{ display:none; }
+
+.panel.active{ display:block; }
+
+
+
+/* ---- Mode 1: practice ring ---- */
+
+.ring-wrap{ position: relative; width: 260px; height: 260px; margin: 4px auto 18px; }
+
+canvas#ring{ width:100%; height:100%; display:block; }
+
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+
+.note{ font-family:'Fraunces', serif; font-size: 40px; font-weight:600; line-height:1; }
+
+.freq{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-dim); margin-top:6px; }
+
+.cents{ font-family:'JetBrains Mono', monospace; font-size:12px; margin-top:4px; min-height:16px; }
+
+
+
+.card{ background: var(--surface); border-radius: 16px; padding: 14px 16px 16px; margin-bottom: 14px; }
+
+.card .label{ font-size:12px; color:var(--text-dim); display:block; margin-bottom:10px; }
+
+
+
+.notes{ display:grid; grid-template-columns: repeat(8, 1fr); gap:6px; }
+
+.notes button{
+
+background: var(--surface-2); border:none; color:var(--text); font-size:13px; font-weight:500;
+
+padding:10px 0; border-radius:9px; cursor:pointer;
+
+}
+
+.notes button.active{ background: var(--gold); color:#1b1a12; }
+
+.notes button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+
+
+.primary-btn{
+
+width:100%; padding:15px 0; border-radius:14px; border:none;
+
+background: var(--gold); color:#1b1a12; font-size:15px; font-weight:600; cursor:pointer;
+
+font-family:'Inter', sans-serif; margin-bottom: 12px;
+
+}
+
+.primary-btn.active-state{ background: var(--surface-2); color:var(--text); }
+
+.primary-btn:focus-visible{ outline:2px solid var(--text); outline-offset:2px; }
+
+.primary-btn:disabled{ opacity:0.55; cursor:default; }
+
+
+
+.status{ text-align:center; font-size:12px; color:var(--text-dim); min-height:16px; margin-bottom:12px; }
+
+
+
+.stats{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; text-align:center; }
+
+.stats > div{ background: var(--surface); border-radius:14px; padding:14px 4px; }
+
+.stats span{ font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:600; display:block; }
+
+.stats small{ font-size:10px; color:var(--text-dim); }
+
+
+
+/* ---- Mode 2: technique analysis ---- */
+
+.rec-row{ display:flex; align-items:center; gap:10px; margin-bottom: 4px; }
+
+.rec-timer{
+
+font-family:'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim);
+
+text-align:center; margin-bottom: 12px;
+
+}
+
+.chart-wrap{ background: var(--surface); border-radius:16px; padding: 12px 10px 6px; margin-bottom:14px; overflow-x:auto; }
+
+canvas#chart{ width:100%; height:200px; display:block; }
+
+.legend{ display:flex; flex-wrap:wrap; gap: 8px 14px; padding: 6px 4px 2px; }
+
+.legend span{ font-size:11px; color: var(--text-dim); display:flex; align-items:center; gap:5px; }
+
+.legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+
+
+.event-list{ display:flex; flex-direction:column; gap:8px; }
+
+.event-item{
+
+background: var(--surface); border-radius: 12px; padding: 10px 12px;
+
+display:flex; align-items:center; gap:10px; font-size:13px;
+
+}
+
+.event-item .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+.event-item .ev-body{ flex:1; }
+
+.event-item .ev-type{ font-weight:600; }
+
+.event-item .ev-detail{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); }
+
+.event-item .ev-time{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); }
+
+.empty-note{ text-align:center; font-size:12px; color:var(--text-dim); padding: 14px 0; }
+
+.disclaimer{ font-size:11px; color:var(--text-dim); line-height:1.6; margin-top: 16px; padding: 0 4px; }
+
+</style>
+
+</head>
+
+<body>
+
+<div class="app">
+
+<header>
+
+<h1>ピッチリング</h1>
+
+<p>音程練習 & テクニック分析</p>
+
+</header>
+
+
+
+<div class="tabs">
+
+<button id="tabBtn1" class="active">🎯 音程練習</button>
+
+<button id="tabBtn2">🎤 テクニック分析</button>
+
+</div>
+
+
+
+<!-- ============ MODE 1: PRACTICE ============ -->
+
+<div class="panel active" id="panel1">
+
+<div class="ring-wrap">
+
+<canvas id="ring" width="260" height="260"></canvas>
+
+<div class="ring-center">
+
+<div class="note" id="noteName">ー</div>
+
+<div class="freq" id="freqVal">0.0 Hz</div>
+
+<div class="cents" id="centsVal"></div>
+
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<span class="label">目標の音を選ぶ</span>
+
+<div class="notes" id="noteButtons"></div>
+
+</div>
+
+
+
+<button class="primary-btn" id="micBtn">マイクを開始する</button>
+
+<div class="status" id="statusMsg"></div>
+
+
+
+<div class="stats">
+
+<div><span id="streakVal">0.0</span><small>キープ秒数</small></div>
+
+<div><span id="accuracyVal">0%</span><small>正確度</small></div>
+
+<div><span id="bestVal">0.0</span><small>自己ベスト</small></div>
+
+</div>
+
+</div>
+
+
+
+<!-- ============ MODE 2: TECHNIQUE ANALYSIS ============ -->
+
+<div class="panel" id="panel2">
+
+<button class="primary-btn" id="recBtn">録音して分析する(最大8秒)</button>
+
+<div class="rec-timer" id="recTimer"></div>
+
+<div class="status" id="statusMsg2"></div>
+
+
+
+<div class="chart-wrap">
+
+<canvas id="chart" width="640" height="200"></canvas>
+
+<div class="legend" id="legend"></div>
+
+</div>
+
+
+
+<div class="event-list" id="eventList">
+
+<div class="empty-note">録音するとここに検出されたテクニックが表示されます</div>
+
+</div>
+
+
+
+<p class="disclaimer">
+
+※ ピッチと音量の変化パターンから推定する簡易解析です。実際のカラオケ採点機とは判定基準が異なり、目安としてご利用ください。
+
+</p>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+(function(){
+
+// ============ SHARED AUDIO SETUP ============
+
+let audioCtx, analyser, dataArray, micStream, micReady = false;
+
+
+
+async function ensureMic(){
+
+if (micReady) return true;
+
+
+
+if (!window.isSecureContext){
+
+throw new Error('このページは安全な接続(HTTPS)で開かれていません。file://やhttp://からはマイクを使用できません。');
+
+}
+
+if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+
+throw new Error('このブラウザ/表示環境ではマイク機能(getUserMedia)自体がサポートされていません。');
+
+}
+
+
+
+let stream;
+
+try{
+
+stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+
+} catch(err){
+
+throw new Error(`[${err.name}] ${err.message || '詳細不明のエラー'}`);
+
+}
+
+
+
+micStream = stream;
+
+audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+analyser = audioCtx.createAnalyser();
+
+analyser.fftSize = 2048;
+
+dataArray = new Float32Array(analyser.fftSize);
+
+const source = audioCtx.createMediaStreamSource(stream);
+
+source.connect(analyser);
+
+micReady = true;
+
+return true;
+
+}
+
+
+
+function autoCorrelate(buf, sampleRate){
+
+const SIZE = buf.length;
+
+let rms = 0;
+
+for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+
+rms = Math.sqrt(rms / SIZE);
+
+if (rms < 0.012) return -1;
+
+
+
+let r1 = 0, r2 = SIZE - 1;
+
+const thres = 0.2;
+
+for (let i = 0; i < SIZE / 2; i++){ if (Math.abs(buf[i]) < thres) { r1 = i; break; } }
+
+for (let i = 1; i < SIZE / 2; i++){ if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; } }
+
+const trimmed = buf.slice(r1, r2);
+
+const n = trimmed.length;
+
+if (n < 8) return -1;
+
+
+
+const c = new Array(n).fill(0);
+
+for (let i = 0; i < n; i++){
+
+for (let j = 0; j < n - i; j++) c[i] += trimmed[j] * trimmed[j + i];
+
+}
+
+let d = 0;
+
+while (d < n - 1 && c[d] > c[d + 1]) d++;
+
+let maxVal = -1, maxPos = -1;
+
+for (let i = d; i < n; i++){ if (c[i] > maxVal){ maxVal = c[i]; maxPos = i; } }
+
+if (maxPos <= 0) return -1;
+
+let T0 = maxPos;
+
+const x1 = c[T0 - 1] !== undefined ? c[T0 - 1] : c[T0];
+
+const x2 = c[T0];
+
+const x3 = c[T0 + 1] !== undefined ? c[T0 + 1] : c[T0];
+
+const a = (x1 + x3 - 2 * x2) / 2;
+
+const b = (x3 - x1) / 2;
+
+if (a) T0 = T0 - b / (2 * a);
+
+if (T0 <= 0) return -1;
+
+return sampleRate / T0;
+
+}
+
+
+
+function rmsOf(buf){
+
+let s = 0;
+
+for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+
+return Math.sqrt(s / buf.length);
+
+}
+
+
+
+const noteNamesJP = ['ド','ド#','レ','レ#','ミ','ファ','ファ#','ソ','ソ#','ラ','ラ#','シ'];
+
+function midiFromFreq(f){ return 69 + 12 * Math.log2(f / 440); }
+
+function noteLabelFromMidi(m){
+
+const rounded = Math.round(m);
+
+const idx = ((rounded % 12) + 12) % 12;
+
+const octave = Math.floor(rounded / 12) - 1;
+
+return noteNamesJP[idx] + octave;
+
+}
+
+
+
+// ============ TABS ============
+
+const tabBtn1 = document.getElementById('tabBtn1');
+
+const tabBtn2 = document.getElementById('tabBtn2');
+
+const panel1 = document.getElementById('panel1');
+
+const panel2 = document.getElementById('panel2');
+
+
+
+tabBtn1.addEventListener('click', () => {
+
+stopPractice();
+
+if (recording) stopRecording();
+
+tabBtn1.classList.add('active'); tabBtn2.classList.remove('active');
+
+panel1.classList.add('active'); panel2.classList.remove('active');
+
+});
+
+tabBtn2.addEventListener('click', () => {
+
+stopPractice();
+
+tabBtn2.classList.add('active'); tabBtn1.classList.remove('active');
+
+panel2.classList.add('active'); panel1.classList.remove('active');
+
+});
+
+
+
+// ============ MODE 1: PRACTICE RING ============
+
+const scale = [
+
+{ label: 'ド', note: 60 }, { label: 'レ', note: 62 }, { label: 'ミ', note: 64 }, { label: 'ファ', note: 65 },
+
+{ label: 'ソ', note: 67 }, { label: 'ラ', note: 69 }, { label: 'シ', note: 71 }, { label: 'ド', note: 72 },
+
+];
+
+const noteButtonsEl = document.getElementById('noteButtons');
+
+const micBtn = document.getElementById('micBtn');
+
+const statusMsg = document.getElementById('statusMsg');
+
+const noteNameEl = document.getElementById('noteName');
+
+const freqValEl = document.getElementById('freqVal');
+
+const centsValEl = document.getElementById('centsVal');
+
+const streakValEl = document.getElementById('streakVal');
+
+const accuracyValEl = document.getElementById('accuracyVal');
+
+const bestValEl = document.getElementById('bestVal');
+
+const ringCanvas = document.getElementById('ring');
+
+const ringCtx = ringCanvas.getContext('2d');
+
+
+
+let targetMidi = 69;
+
+let practicing = false;
+
+let practiceRaf;
+
+let smoothedCents = 0;
+
+let streakStart = null;
+
+let bestStreak = 0;
+
+let framesInTune = 0, framesTotal = 0;
+
+
+
+function buildNoteButtons(){
+
+scale.forEach((n) => {
+
+const btn = document.createElement('button');
+
+btn.textContent = n.label;
+
+if (n.note === targetMidi) btn.classList.add('active');
+
+btn.addEventListener('click', () => {
+
+targetMidi = n.note;
+
+document.querySelectorAll('#noteButtons button').forEach(b => b.classList.remove('active'));
+
+btn.classList.add('active');
+
+resetSession();
+
+});
+
+noteButtonsEl.appendChild(btn);
+
+});
+
+}
+
+
+
+function resetSession(){
+
+framesInTune = 0; framesTotal = 0; streakStart = null;
+
+accuracyValEl.textContent = '0%'; streakValEl.textContent = '0.0';
+
+}
+
+
+
+function colorForCents(cents, voiced){
+
+if (!voiced) return 'rgba(166,172,201,0.35)';
+
+const abs = Math.abs(cents);
+
+if (abs < 12) return '#e3a94c';
+
+if (cents < 0) return '#5b9dd6';
+
+return '#e2705f';
+
+}
+
+
+
+function drawRing(cents, voiced){
+
+const w = ringCanvas.width, h = ringCanvas.height;
+
+const cx = w/2, cy = h/2, radius = w/2 - 16;
+
+ringCtx.clearRect(0,0,w,h);
+
+const startAngle = Math.PI * 0.75, endAngle = Math.PI * 2.25;
+
+ringCtx.beginPath(); ringCtx.arc(cx,cy,radius,startAngle,endAngle);
+
+ringCtx.strokeStyle = 'rgba(255,255,255,0.08)'; ringCtx.lineWidth = 14; ringCtx.lineCap='round'; ringCtx.stroke();
+
+const midAngle = (startAngle+endAngle)/2;
+
+ringCtx.beginPath(); ringCtx.arc(cx,cy,radius,midAngle-0.05,midAngle+0.05);
+
+ringCtx.strokeStyle='rgba(227,169,76,0.5)'; ringCtx.lineWidth=14; ringCtx.stroke();
+
+const clamped = Math.max(-50, Math.min(50, cents));
+
+const t = (clamped+50)/100;
+
+const valueAngle = startAngle + t*(endAngle-startAngle);
+
+const color = colorForCents(cents, voiced);
+
+ringCtx.beginPath(); ringCtx.arc(cx,cy,radius,midAngle,valueAngle, valueAngle<midAngle);
+
+ringCtx.strokeStyle=color; ringCtx.lineWidth=14; ringCtx.lineCap='round';
+
+ringCtx.shadowColor=color; ringCtx.shadowBlur = voiced?14:0; ringCtx.stroke(); ringCtx.shadowBlur=0;
+
+const dotX = cx + radius*Math.cos(valueAngle), dotY = cy + radius*Math.sin(valueAngle);
+
+ringCtx.beginPath(); ringCtx.arc(dotX,dotY,7,0,Math.PI*2);
+
+ringCtx.fillStyle = voiced? '#f3efe6':'rgba(243,239,230,0.4)'; ringCtx.fill();
+
+}
+
+
+
+function practiceUpdate(freq){
+
+const voiced = freq > 0;
+
+let cents = 0;
+
+if (voiced){
+
+const detectedMidi = midiFromFreq(freq);
+
+cents = (detectedMidi - targetMidi) * 100;
+
+smoothedCents += (cents - smoothedCents) * 0.35;
+
+noteNameEl.textContent = noteLabelFromMidi(detectedMidi);
+
+freqValEl.textContent = freq.toFixed(1) + ' Hz';
+
+const centsAbs = Math.abs(Math.round(cents));
+
+if (centsAbs < 12){ centsValEl.textContent='ぴったり'; centsValEl.style.color='#e3a94c'; }
+
+else { centsValEl.textContent=(cents>0?'+':'')+Math.round(cents)+' cent'; centsValEl.style.color = cents>0?'#e2705f':'#5b9dd6'; }
+
+framesTotal++;
+
+if (Math.abs(cents) < 15){ framesInTune++; if (streakStart===null) streakStart=performance.now(); }
+
+else streakStart = null;
+
+} else {
+
+smoothedCents += (0 - smoothedCents) * 0.15;
+
+noteNameEl.textContent='ー'; freqValEl.textContent='0.0 Hz'; centsValEl.textContent='';
+
+streakStart = null;
+
+}
+
+drawRing(smoothedCents, voiced);
+
+const streakSec = streakStart ? (performance.now()-streakStart)/1000 : 0;
+
+streakValEl.textContent = streakSec.toFixed(1);
+
+if (streakSec > bestStreak){ bestStreak = streakSec; bestValEl.textContent = bestStreak.toFixed(1); saveBest(bestStreak); }
+
+if (framesTotal > 0) accuracyValEl.textContent = Math.round((framesInTune/framesTotal)*100) + '%';
+
+}
+
+
+
+function practiceLoop(){
+
+analyser.getFloatTimeDomainData(dataArray);
+
+const freq = autoCorrelate(dataArray, audioCtx.sampleRate);
+
+practiceUpdate(freq);
+
+practiceRaf = requestAnimationFrame(practiceLoop);
+
+}
+
+
+
+async function startPractice(){
+
+try{
+
+statusMsg.textContent = 'マイクへのアクセスを許可してください…';
+
+await ensureMic();
+
+practicing = true;
+
+micBtn.textContent = 'マイクを停止する';
+
+micBtn.classList.add('active-state');
+
+statusMsg.textContent = '声を出してみましょう。目標の音に合わせてください。';
+
+resetSession();
+
+practiceLoop();
+
+} catch(e){
+
+statusMsg.textContent = 'マイクエラー: ' + e.message;
+
+}
+
+}
+
+
+
+function stopPractice(){
+
+if (!practicing) return;
+
+practicing = false;
+
+if (practiceRaf) cancelAnimationFrame(practiceRaf);
+
+micBtn.textContent = 'マイクを開始する';
+
+micBtn.classList.remove('active-state');
+
+statusMsg.textContent = '';
+
+drawRing(0, false);
+
+}
+
+
+
+micBtn.addEventListener('click', () => { practicing ? stopPractice() : startPractice(); });
+
+
+
+async function loadBest(){
+
+try{
+
+const result = await window.storage.get('pitch-ring:best-streak');
+
+if (result && result.value){ bestStreak = parseFloat(result.value)||0; bestValEl.textContent = bestStreak.toFixed(1); }
+
+} catch(e){}
+
+}
+
+async function saveBest(value){
+
+try{ await window.storage.set('pitch-ring:best-streak', String(value.toFixed(1))); } catch(e){}
+
+}
+
+
+
+// ============ MODE 2: TECHNIQUE ANALYSIS ============
+
+const recBtn = document.getElementById('recBtn');
+
+const recTimer = document.getElementById('recTimer');
+
+const statusMsg2 = document.getElementById('statusMsg2');
+
+const chartCanvas = document.getElementById('chart');
+
+const chartCtx = chartCanvas.getContext('2d');
+
+const legendEl = document.getElementById('legend');
+
+const eventListEl = document.getElementById('eventList');
+
+
+
+const TYPE_INFO = {
+
+'shakuri': { label: 'しゃくり', color: '#5b9dd6' },
+
+'gyaku-shakuri': { label: '逆しゃくり', color: '#8f7fe0' },
+
+'kobushi': { label: 'こぶし', color: '#e3a94c' },
+
+'gyaku-kobushi': { label: '逆こぶし', color: '#e2705f' },
+
+'hammering': { label: 'ハンマリング', color: '#4fd1c5' },
+
+'vibrato': { label: 'ビブラート', color: '#9bd66b' },
+
+'accent': { label: 'アクセント', color: '#ff6f91' },
+
+};
+
+
+
+function buildLegend(){
+
+legendEl.innerHTML = '';
+
+Object.values(TYPE_INFO).forEach(info => {
+
+const span = document.createElement('span');
+
+span.innerHTML = `<i style="background:${info.color}"></i>${info.label}`;
+
+legendEl.appendChild(span);
+
+});
+
+}
+
+buildLegend();
+
+
+
+let recording = false;
+
+let recRaf;
+
+let recStartTime = 0;
+
+let recTrack = [];
+
+const MAX_REC_MS = 8000;
+
+
+
+function recLoop(){
+
+const now = performance.now();
+
+const elapsed = now - recStartTime;
+
+analyser.getFloatTimeDomainData(dataArray);
+
+const freq = autoCorrelate(dataArray, audioCtx.sampleRate);
+
+const rms = rmsOf(dataArray);
+
+const voiced = freq > 0;
+
+recTrack.push({ t: elapsed/1000, cents: voiced ? 1200*Math.log2(freq/440) : null, rms, voiced });
+
+recTimer.textContent = (elapsed/1000).toFixed(1) + ' 秒 / 8.0 秒 (録音中…)';
+
+if (elapsed >= MAX_REC_MS){ stopRecording(); return; }
+
+recRaf = requestAnimationFrame(recLoop);
+
+}
+
+
+
+async function startRecording(){
+
+try{
+
+statusMsg2.textContent = 'マイクへのアクセスを許可してください…';
+
+await ensureMic();
+
+recTrack = [];
+
+recording = true;
+
+recStartTime = performance.now();
+
+recBtn.textContent = '停止する';
+
+recBtn.classList.add('active-state');
+
+statusMsg2.textContent = '短いフレーズを歌ってみてください。';
+
+eventListEl.innerHTML = '';
+
+recLoop();
+
+} catch(e){
+
+statusMsg2.textContent = 'マイクエラー: ' + e.message;
+
+recBtn.textContent = '録音して分析する(最大8秒)';
+
+recBtn.classList.remove('active-state');
+
+}
+
+}
+
+
+
+function stopRecording(){
+
+recording = false;
+
+if (recRaf) cancelAnimationFrame(recRaf);
+
+recBtn.textContent = '録音して分析する(最大8秒)';
+
+recBtn.classList.remove('active-state');
+
+recTimer.textContent = '';
+
+statusMsg2.textContent = '解析中…';
+
+setTimeout(() => {
+
+analyzeAndRender(recTrack);
+
+statusMsg2.textContent = '';
+
+}, 30);
+
+}
+
+
+
+recBtn.addEventListener('click', () => { recording ? stopRecording() : startRecording(); });
+
+
+
+// ---- analysis helpers ----
+
+function median(arr){
+
+if (!arr.length) return 0;
+
+const s = [...arr].sort((a,b)=>a-b);
+
+const m = Math.floor(s.length/2);
+
+return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+
+}
+
+function smoothSeries(vals, win){
+
+const out = new Array(vals.length);
+
+const half = Math.floor(win/2);
+
+for (let i=0;i<vals.length;i++){
+
+let s=0,c=0;
+
+for (let k=-half;k<=half;k++){ const idx=i+k; if (idx>=0 && idx<vals.length){ s+=vals[idx]; c++; } }
+
+out[i]=s/c;
+
+}
+
+return out;
+
+}
+
+function rollingMedian(vals, win){
+
+const half = Math.floor(win/2);
+
+const out = new Array(vals.length);
+
+for (let i=0;i<vals.length;i++){
+
+const from = Math.max(0,i-half), to = Math.min(vals.length-1,i+half);
+
+out[i] = median(vals.slice(from,to+1));
+
+}
+
+return out;
+
+}
+
+
+
+function fillGaps(track){
+
+const result = track.map(s => ({...s}));
+
+let i = 0;
+
+while (i < result.length){
+
+if (!result[i].voiced){
+
+let j = i;
+
+while (j < result.length && !result[j].voiced) j++;
+
+if (i > 0 && j < result.length){
+
+const gapDur = result[j].t - result[i-1].t;
+
+if (gapDur < 0.12){
+
+const c0 = result[i-1].cents, c1 = result[j].cents, t0 = result[i-1].t, t1 = result[j].t;
+
+for (let k=i;k<j;k++){
+
+const frac = (result[k].t - t0) / (t1 - t0);
+
+result[k].cents = c0 + (c1-c0)*frac;
+
+result[k].voiced = true;
+
+}
+
+}
+
+}
+
+i = j;
+
+} else i++;
+
+}
+
+return result;
+
+}
+
+
+
+function segmentPhrases(track){
+
+const phrases = [];
+
+let cur = [];
+
+for (const s of track){
+
+if (s.voiced) cur.push(s);
+
+else {
+
+if (cur.length && (cur[cur.length-1].t - cur[0].t) >= 0.15) phrases.push(cur);
+
+cur = [];
+
+}
+
+}
+
+if (cur.length && (cur[cur.length-1].t - cur[0].t) >= 0.15) phrases.push(cur);
+
+return phrases;
+
+}
+
+
+
+function analyzePhrase(phrase){
+
+const t = phrase.map(s => s.t);
+
+const rawCents = phrase.map(s => s.cents);
+
+const rms = phrase.map(s => s.rms);
+
+const cents = smoothSeries(rawCents, 5);
+
+const n = cents.length;
+
+const events = [];
+
+if (n < 4) return events;
+
+
+
+const midStart = Math.floor(n*0.25), midEnd = Math.ceil(n*0.75);
+
+const core = median(cents.slice(midStart, midEnd+1));
+
+
+
+// onset: shakuri / gyaku-shakuri
+
+let onsetEndIdx = 0;
+
+while (onsetEndIdx < n-1 && (t[onsetEndIdx]-t[0])*1000 < 280) onsetEndIdx++;
+
+const onsetStart = cents[0];
+
+if (Math.abs(onsetStart - core) > 40 && onsetEndIdx >= 2){
+
+let monotonic = true;
+
+const dir = core > onsetStart ? 1 : -1;
+
+for (let i=1;i<=onsetEndIdx;i++){ if ((cents[i]-cents[i-1])*dir < -8){ monotonic=false; break; } }
+
+if (monotonic){
+
+events.push({
+
+type: dir > 0 ? 'shakuri' : 'gyaku-shakuri',
+
+time: t[0],
+
+detail: `${Math.round(onsetStart)}→${Math.round(core)}cent / ${Math.round((t[onsetEndIdx]-t[0])*1000)}ms`
+
+});
+
+}
+
+}
+
+
+
+// flicks: kobushi / gyaku-kobushi / hammering
+
+const rmed = rollingMedian(cents, 9);
+
+let i = Math.max(onsetEndIdx+1, 2);
+
+while (i < n-1){
+
+const dev = cents[i] - rmed[i];
+
+if (Math.abs(dev) > 55){
+
+let j = i;
+
+while (j < n && Math.abs(cents[j]-rmed[j]) > 55) j++;
+
+const durMs = (t[Math.min(j,n-1)] - t[i]) * 1000;
+
+const peakDev = Math.max(...cents.slice(i,j).map(c => Math.abs(c-rmed[i])));
+
+const afterIdx = Math.min(j+3, n-1);
+
+const afterVal = cents[afterIdx];
+
+const returned = Math.abs(afterVal - rmed[i]) < 30;
+
+const newPlateau = Math.abs(afterVal - rmed[i]) > 100;
+
+
+
+if (durMs < 260 && returned){
+
+events.push({ type: dev>0?'kobushi':'gyaku-kobushi', time: t[i], detail: `${Math.round(peakDev)}cent flick / ${Math.round(durMs)}ms` });
+
+} else if (durMs < 200 && newPlateau){
+
+events.push({ type: 'hammering', time: t[i], detail: `${Math.round(rmed[i])}→${Math.round(afterVal)}cent slide / ${Math.round(durMs)}ms` });
+
+}
+
+i = j + 1;
+
+} else i++;
+
+}
+
+
+
+// vibrato: residual oscillation
+
+const residual = cents.map((c,idx) => c - rmed[idx]);
+
+const crossings = [];
+
+for (let k=1;k<n;k++){
+
+if ((residual[k-1] < 0 && residual[k] >= 0) || (residual[k-1] > 0 && residual[k] <= 0)) crossings.push(t[k]);
+
+}
+
+if (crossings.length >= 4){
+
+const periods = [];
+
+for (let k=2;k<crossings.length;k+=2) periods.push(crossings[k]-crossings[k-2]);
+
+if (periods.length){
+
+const avgPeriod = periods.reduce((a,b)=>a+b,0)/periods.length;
+
+const rateHz = avgPeriod > 0 ? 1/avgPeriod : 0;
+
+const depth = median(residual.map(r => Math.abs(r)).filter(v => v > 0));
+
+if (rateHz >= 3.5 && rateHz <= 9 && depth >= 12 && depth <= 110){
+
+events.push({ type:'vibrato', time: t[Math.floor(n/2)], detail: `${rateHz.toFixed(1)}Hz ・ ±${Math.round(depth)}cent` });
+
+}
+
+}
+
+}
+
+
+
+// accent: amplitude spikes
+
+const baseRms = median(rms);
+
+let k2 = 1;
+
+while (k2 < n-1){
+
+if (rms[k2] > baseRms*1.6 && rms[k2] > 0.02){
+
+let j = k2;
+
+while (j < n && rms[j] > baseRms*1.4) j++;
+
+const durMs = (t[Math.min(j,n-1)]-t[k2])*1000;
+
+if (durMs < 220) events.push({ type:'accent', time: t[k2], detail: '音量スパイク' });
+
+k2 = j + 1;
+
+} else k2++;
+
+}
+
+
+
+events.sort((a,b) => a.time - b.time);
+
+return events;
+
+}
+
+
+
+function drawChart(phrases, events, totalDuration){
+
+const w = chartCanvas.width, h = chartCanvas.height;
+
+chartCtx.clearRect(0,0,w,h);
+
+if (!phrases.length){
+
+chartCtx.fillStyle = 'rgba(166,172,201,0.5)';
+
+chartCtx.font = '13px Inter';
+
+chartCtx.fillText('声が検出されませんでした', 20, h/2);
+
+return;
+
+}
+
+let allCents = [];
+
+phrases.forEach(p => p.forEach(s => { if (s.cents !== null) allCents.push(s.cents); }));
+
+let minC = Math.min(...allCents) - 80, maxC = Math.max(...allCents) + 80;
+
+
+
+const padL = 34, padR = 10, padT = 10, padB = 20;
+
+const plotW = w - padL - padR, plotH = h - padT - padB;
+
+
+
+function xOf(t){ return padL + (t/totalDuration) * plotW; }
+
+function yOf(c){ return padT + (1 - (c-minC)/(maxC-minC)) * plotH; }
+
+
+
+// gridlines every semitone (100 cents)
+
+chartCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+
+chartCtx.fillStyle = 'rgba(166,172,201,0.6)';
+
+chartCtx.font = '9px JetBrains Mono';
+
+const startSemi = Math.ceil(minC/100), endSemi = Math.floor(maxC/100);
+
+for (let s = startSemi; s <= endSemi; s++){
+
+const c = s*100;
+
+const y = yOf(c);
+
+chartCtx.beginPath(); chartCtx.moveTo(padL, y); chartCtx.lineTo(w-padR, y); chartCtx.stroke();
+
+const midi = 69 + s;
+
+chartCtx.fillText(noteLabelFromMidi(midi), 2, y+3);
+
+}
+
+
+
+// pitch line per phrase
+
+chartCtx.lineWidth = 2;
+
+chartCtx.strokeStyle = '#f3efe6';
+
+phrases.forEach(phrase => {
+
+chartCtx.beginPath();
+
+phrase.forEach((s, idx) => {
+
+if (s.cents === null) return;
+
+const x = xOf(s.t), y = yOf(s.cents);
+
+if (idx === 0) chartCtx.moveTo(x,y); else chartCtx.lineTo(x,y);
+
+});
+
+chartCtx.stroke();
+
+});
+
+
+
+// event markers
+
+events.forEach(ev => {
+
+const info = TYPE_INFO[ev.type];
+
+const x = xOf(ev.time);
+
+chartCtx.beginPath();
+
+chartCtx.moveTo(x, padT);
+
+chartCtx.lineTo(x, h - padB);
+
+chartCtx.strokeStyle = info.color + '55';
+
+chartCtx.lineWidth = 1.5;
+
+chartCtx.stroke();
+
+chartCtx.beginPath();
+
+chartCtx.arc(x, padT+6, 4, 0, Math.PI*2);
+
+chartCtx.fillStyle = info.color;
+
+chartCtx.fill();
+
+});
+
+
+
+// time axis ticks
+
+chartCtx.fillStyle = 'rgba(166,172,201,0.6)';
+
+for (let sec=0; sec<=Math.ceil(totalDuration); sec++){
+
+const x = xOf(sec);
+
+chartCtx.fillText(sec + 's', x-6, h-6);
+
+}
+
+}
+
+
+
+function renderEventList(events){
+
+eventListEl.innerHTML = '';
+
+if (!events.length){
+
+eventListEl.innerHTML = '<div class="empty-note">今回は明確なテクニックは検出されませんでした</div>';
+
+return;
+
+}
+
+events.forEach(ev => {
+
+const info = TYPE_INFO[ev.type];
+
+const item = document.createElement('div');
+
+item.className = 'event-item';
+
+item.innerHTML = `
+
+<div class="dot" style="background:${info.color}"></div>
+
+<div class="ev-body">
+
+<div class="ev-type">${info.label}</div>
+
+<div class="ev-detail">${ev.detail}</div>
+
+</div>
+
+<div class="ev-time">${ev.time.toFixed(2)}s</div>
+
+`;
+
+eventListEl.appendChild(item);
+
+});
+
+}
+
+
+
+function analyzeAndRender(track){
+
+if (!track.length){ drawChart([], [], 1); renderEventList([]); return; }
+
+const filled = fillGaps(track);
+
+const phrases = segmentPhrases(filled);
+
+let allEvents = [];
+
+phrases.forEach(p => { allEvents = allEvents.concat(analyzePhrase(p)); });
+
+allEvents.sort((a,b) => a.time - b.time);
+
+const totalDuration = Math.max(track[track.length-1].t, 1);
+
+drawChart(phrases, allEvents, totalDuration);
+
+renderEventList(allEvents);
+
+}
+
+
+
+// ============ INIT ============
+
+buildNoteButtons();
+
+drawRing(0, false);
+
+loadBest();
+
+drawChart([], [], 1);
+
+})();
+
+</script>
+
+</body>
+
+</html> 
+
