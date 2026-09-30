@@ -514,3 +514,238 @@
       if (!emittedKeys.has(key)){
         emittedKeys.add(key);
         allEvents.push(ev);
+        prependEventToList(ev);
+      }
+    });
+  }
+
+  function prependEventToList(ev){
+    const emptyNote = eventListEl.querySelector('.empty-note');
+    if (emptyNote) emptyNote.remove();
+    const info = TYPE_INFO[ev.type];
+    const item = document.createElement('div');
+    item.className = 'event-item';
+    item.innerHTML = `
+      <div class="dot" style="background:${info.color}"></div>
+      <div class="ev-body">
+        <div class="ev-type">${info.label}</div>
+        <div class="ev-detail">${ev.detail}</div>
+      </div>
+      <div class="ev-time">${ev.time.toFixed(2)}s</div>
+    `;
+    eventListEl.prepend(item);
+    // cap list length for performance
+    while (eventListEl.children.length > 20) eventListEl.removeChild(eventListEl.lastChild);
+  }
+
+  function drawLiveChart(nowT){
+    const windowStart = nowT - WINDOW_SEC;
+    const visible = liveBuffer.filter(s => s.t >= windowStart);
+    const w = chartCanvas.width, h = chartCanvas.height;
+    chartCtx.clearRect(0,0,w,h);
+
+    const voicedCents = visible.filter(s => s.cents !== null).map(s => s.cents);
+    let minC = -100, maxC = 100;
+    if (voicedCents.length){ minC = Math.min(...voicedCents) - 80; maxC = Math.max(...voicedCents) + 80; }
+
+    const padL = 34, padR = 10, padT = 10, padB = 20;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    function xOf(t){ return padL + ((t - windowStart)/WINDOW_SEC) * plotW; }
+    function yOf(c){ return padT + (1 - (c-minC)/(maxC-minC)) * plotH; }
+
+    chartCtx.strokeStyle = 'rgba(255,255,255,0.06)';
+    chartCtx.fillStyle = 'rgba(166,172,201,0.6)';
+    chartCtx.font = '9px JetBrains Mono';
+    const startSemi = Math.ceil(minC/100), endSemi = Math.floor(maxC/100);
+    for (let s = startSemi; s <= endSemi; s++){
+      const y = yOf(s*100);
+      chartCtx.beginPath(); chartCtx.moveTo(padL, y); chartCtx.lineTo(w-padR, y); chartCtx.stroke();
+      chartCtx.fillText(noteLabelFromMidi(69+s), 2, y+3);
+    }
+
+    chartCtx.lineWidth = 2;
+    chartCtx.strokeStyle = '#f3efe6';
+    let drawing = false;
+    visible.forEach(s => {
+      if (s.cents === null){ drawing = false; return; }
+      const x = xOf(s.t), y = yOf(s.cents);
+      if (!drawing){ chartCtx.beginPath(); chartCtx.moveTo(x,y); drawing = true; }
+      else chartCtx.lineTo(x,y);
+    });
+    if (drawing) chartCtx.stroke();
+
+    allEvents.forEach(ev => {
+      if (ev.time < windowStart || ev.time > nowT) return;
+      const info = TYPE_INFO[ev.type];
+      const x = xOf(ev.time);
+      chartCtx.beginPath(); chartCtx.moveTo(x, padT); chartCtx.lineTo(x, h-padB);
+      chartCtx.strokeStyle = info.color + '55'; chartCtx.lineWidth = 1.5; chartCtx.stroke();
+      chartCtx.beginPath(); chartCtx.arc(x, padT+6, 4, 0, Math.PI*2);
+      chartCtx.fillStyle = info.color; chartCtx.fill();
+    });
+
+    chartCtx.fillStyle = 'rgba(166,172,201,0.6)';
+    const firstTick = Math.ceil(windowStart);
+    for (let sec = firstTick; sec <= nowT; sec++){
+      chartCtx.fillText(sec + 's', xOf(sec)-6, h-6);
+    }
+  }
+
+  async function startStreaming(){
+    try{
+      statusMsg2.textContent = 'マイクへのアクセスを許可してください…';
+      await ensureMic();
+      liveBuffer = []; currentPhrase = []; silenceStart = null;
+      allEvents = []; emittedKeys = new Set(); frameCounter = 0;
+      eventListEl.innerHTML = '<div class="empty-note">開始すると、検出されたテクニックがここに新しい順で表示されます</div>';
+      streaming = true;
+      streamStartPerf = performance.now();
+      recBtn.textContent = '停止する';
+      recBtn.classList.add('active-state');
+      statusMsg2.textContent = '声を出してみてください。歌っている間、常に解析します。';
+      streamLoop();
+    } catch(e){
+      statusMsg2.textContent = 'マイクエラー: ' + e.message;
+      recBtn.textContent = 'リアルタイム分析を開始する';
+      recBtn.classList.remove('active-state');
+    }
+  }
+
+  function stopStreaming(){
+    if (!streaming) return;
+    streaming = false;
+    if (streamRaf) cancelAnimationFrame(streamRaf);
+    if (currentPhrase.length) runIncrementalAnalysis();
+    recBtn.textContent = 'リアルタイム分析を開始する';
+    recBtn.classList.remove('active-state');
+    recTimer.textContent = '';
+    statusMsg2.textContent = '';
+  }
+
+  recBtn.addEventListener('click', () => { streaming ? stopStreaming() : startStreaming(); });
+
+  // ---- analysis helpers ----
+  function median(arr){
+    if (!arr.length) return 0;
+    const s = [...arr].sort((a,b)=>a-b);
+    const m = Math.floor(s.length/2);
+    return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+  }
+  function smoothSeries(vals, win){
+    const out = new Array(vals.length);
+    const half = Math.floor(win/2);
+    for (let i=0;i<vals.length;i++){
+      let s=0,c=0;
+      for (let k=-half;k<=half;k++){ const idx=i+k; if (idx>=0 && idx<vals.length){ s+=vals[idx]; c++; } }
+      out[i]=s/c;
+    }
+    return out;
+  }
+  function rollingMedian(vals, win){
+    const half = Math.floor(win/2);
+    const out = new Array(vals.length);
+    for (let i=0;i<vals.length;i++){
+      const from = Math.max(0,i-half), to = Math.min(vals.length-1,i+half);
+      out[i] = median(vals.slice(from,to+1));
+    }
+    return out;
+  }
+
+  function analyzePhrase(phrase){
+    const t = phrase.map(s => s.t);
+    const rawCents = phrase.map(s => s.cents);
+    const rms = phrase.map(s => s.rms);
+    const cents = smoothSeries(rawCents, 5);
+    const n = cents.length;
+    const events = [];
+    if (n < 4) return events;
+
+    const midStart = Math.floor(n*0.25), midEnd = Math.ceil(n*0.75);
+    const core = median(cents.slice(midStart, midEnd+1));
+
+    // onset: shakuri / gyaku-shakuri
+    let onsetEndIdx = 0;
+    while (onsetEndIdx < n-1 && (t[onsetEndIdx]-t[0])*1000 < 280) onsetEndIdx++;
+    const onsetStart = cents[0];
+    if (Math.abs(onsetStart - core) > 40 && onsetEndIdx >= 2){
+      let monotonic = true;
+      const dir = core > onsetStart ? 1 : -1;
+      for (let i=1;i<=onsetEndIdx;i++){ if ((cents[i]-cents[i-1])*dir < -8){ monotonic=false; break; } }
+      if (monotonic){
+        events.push({
+          type: dir > 0 ? 'shakuri' : 'gyaku-shakuri',
+          time: t[0],
+          detail: `${Math.round(onsetStart)}→${Math.round(core)}cent / ${Math.round((t[onsetEndIdx]-t[0])*1000)}ms`
+        });
+      }
+    }
+
+    // flicks: kobushi / gyaku-kobushi / hammering
+    const rmed = rollingMedian(cents, 9);
+    let i = Math.max(onsetEndIdx+1, 2);
+    while (i < n-1){
+      const dev = cents[i] - rmed[i];
+      if (Math.abs(dev) > 55){
+        let j = i;
+        while (j < n && Math.abs(cents[j]-rmed[j]) > 55) j++;
+        const durMs = (t[Math.min(j,n-1)] - t[i]) * 1000;
+        const peakDev = Math.max(...cents.slice(i,j).map(c => Math.abs(c-rmed[i])));
+        const afterIdx = Math.min(j+3, n-1);
+        const afterVal = cents[afterIdx];
+        const returned = Math.abs(afterVal - rmed[i]) < 30;
+        const newPlateau = Math.abs(afterVal - rmed[i]) > 100;
+
+        if (durMs < 260 && returned){
+          events.push({ type: dev>0?'kobushi':'gyaku-kobushi', time: t[i], detail: `${Math.round(peakDev)}cent flick / ${Math.round(durMs)}ms` });
+        } else if (durMs < 200 && newPlateau){
+          events.push({ type: 'hammering', time: t[i], detail: `${Math.round(rmed[i])}→${Math.round(afterVal)}cent slide / ${Math.round(durMs)}ms` });
+        }
+        i = j + 1;
+      } else i++;
+    }
+
+    // vibrato: residual oscillation
+    const residual = cents.map((c,idx) => c - rmed[idx]);
+    const crossings = [];
+    for (let k=1;k<n;k++){
+      if ((residual[k-1] < 0 && residual[k] >= 0) || (residual[k-1] > 0 && residual[k] <= 0)) crossings.push(t[k]);
+    }
+    if (crossings.length >= 4){
+      const periods = [];
+      for (let k=2;k<crossings.length;k+=2) periods.push(crossings[k]-crossings[k-2]);
+      if (periods.length){
+        const avgPeriod = periods.reduce((a,b)=>a+b,0)/periods.length;
+        const rateHz = avgPeriod > 0 ? 1/avgPeriod : 0;
+        const depth = median(residual.map(r => Math.abs(r)).filter(v => v > 0));
+        if (rateHz >= 3.5 && rateHz <= 9 && depth >= 12 && depth <= 110){
+          events.push({ type:'vibrato', time: t[Math.floor(n/2)], detail: `${rateHz.toFixed(1)}Hz ・ ±${Math.round(depth)}cent` });
+        }
+      }
+    }
+
+    // accent: amplitude spikes
+    const baseRms = median(rms);
+    let k2 = 1;
+    while (k2 < n-1){
+      if (rms[k2] > baseRms*1.6 && rms[k2] > 0.02){
+        let j = k2;
+        while (j < n && rms[j] > baseRms*1.4) j++;
+        const durMs = (t[Math.min(j,n-1)]-t[k2])*1000;
+        if (durMs < 220) events.push({ type:'accent', time: t[k2], detail: '音量スパイク' });
+        k2 = j + 1;
+      } else k2++;
+    }
+
+    events.sort((a,b) => a.time - b.time);
+    return events;
+  }
+
+  // ============ INIT ============
+  buildNoteButtons();
+  drawRing(0, false);
+  loadBest();
+  drawLiveChart(0);
+})();
+</script>
+</body>
+</html>
