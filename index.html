@@ -1,4 +1,510 @@
-renderEventItem(ev);
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pitch Ring - ピッチリング</title>
+<style>
+  :root {
+    --bg-color: #121319;
+    --card-bg: #1c1e26;
+    --accent-color: #5b9dd6;
+    --accent-gold: #e3a94c;
+    --accent-pink: #e06c75;
+    --text-primary: #e6e8ee;
+    --text-secondary: #8b92a5;
+    --border-color: #2e3240;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 10px;
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  header h1 { font-size: 1.8rem; color: var(--accent-gold); font-weight: 700; letter-spacing: 1px; }
+  header p { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+
+  .nav-tabs {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: 30px;
+    padding: 4px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+  }
+  .tab-btn {
+    padding: 8px 18px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+  .tab-btn.active {
+    background: var(--accent-color);
+    color: #fff;
+  }
+
+  .mode-panel {
+    display: none;
+    width: 100%;
+    max-width: 500px;
+    flex-direction: column;
+    align-items: center;
+  }
+  .mode-panel.active { display: flex; }
+
+  /* --- MODE 1: RING STABILITY --- */
+  .ring-container {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    margin: 15px 0;
+  }
+  .ring-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .ring-bg {
+    fill: none;
+    stroke: var(--border-color);
+    stroke-width: 12;
+  }
+  .ring-bar {
+    fill: none;
+    stroke: var(--accent-color);
+    stroke-width: 12;
+    stroke-linecap: round;
+    stroke-dasharray: 691; /* 2 * PI * 110 */
+    stroke-dashoffset: 691;
+    transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
+  }
+  .ring-center {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .pitch-name { font-size: 2.8rem; font-weight: 800; color: #fff; text-shadow: 0 0 10px rgba(91,157,214,0.3); }
+  .pitch-cents { font-size: 1rem; color: var(--text-secondary); margin-top: -4px; }
+  .score-display { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); margin-top: 6px; }
+
+  .target-select {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+  .target-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .target-btn.active {
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
+    background: rgba(227,169,76,0.1);
+  }
+
+  /* --- MODE 2: REALTIME TECHNIQUE DETECTOR --- */
+  .chart-card {
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+  canvas {
+    width: 100%;
+    height: 160px;
+    background: #161820;
+    border-radius: 8px;
+    display: block;
+  }
+
+  .event-list {
+    width: 100%;
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .event-item {
+    background: #161820;
+    border-left: 4px solid var(--accent-color);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .event-item .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .event-item .ev-type { font-weight: bold; }
+  .event-item .ev-time { font-size: 0.75rem; color: var(--text-secondary); }
+
+  .action-btn {
+    width: 100%;
+    max-width: 300px;
+    padding: 12px;
+    background: var(--accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(91,157,214,0.3);
+    margin-top: 10px;
+  }
+  .action-btn.active-state { background: var(--accent-pink); box-shadow: 0 4px 12px rgba(224,108,117,0.3); }
+
+  .status-msg { font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; height: 18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PITCH RING</h1>
+  <p>ボイストレーニング・リアルタイム解析ツール</p>
+</header>
+
+<div class="nav-tabs">
+  <button class="tab-btn active" onclick="switchMode('mode1')">ロングトーン判定</button>
+  <button class="tab-btn" onclick="switchMode('mode2')">テクニック分析</button>
+</div>
+
+<!-- MODE 1 -->
+<div id="mode1" class="mode-panel active">
+  <div class="target-select" id="targetButtons"></div>
+
+  <div class="ring-container">
+    <svg class="ring-svg" viewBox="0 0 240 240">
+      <circle class="ring-bg" cx="120" cy="120" r="110"></circle>
+      <circle id="ringBar" class="ring-bar" cx="120" cy="120" r="110"></circle>
+    </svg>
+    <div class="ring-center">
+      <div id="pitchName" class="pitch-name">--</div>
+      <div id="pitchCents" class="pitch-cents">0 cent</div>
+      <div id="scoreDisplay" class="score-display">安定度: 0%</div>
+    </div>
+  </div>
+
+  <button id="micBtn1" class="action-btn">マイク起動</button>
+  <div id="statusMsg1" class="status-msg"></div>
+</div>
+
+<!-- MODE 2 -->
+<div id="mode2" class="mode-panel">
+  <div class="chart-card">
+    <canvas id="pitchChart" width="480" height="160"></canvas>
+  </div>
+
+  <div class="event-list" id="eventList">
+    <div class="empty-note" style="color: var(--text-secondary); text-align: center; font-size: 0.85rem; padding: 20px;">
+      声を出すと、検出されたテクニック（こぶし・しゃくり等）がここに表示されます
+    </div>
+  </div>
+
+  <button id="recBtn" class="action-btn">リアルタイム分析を開始</button>
+  <div id="recTimer" style="font-size:0.8rem; color:var(--accent-gold); margin-top:4px;"></div>
+  <div id="statusMsg2" class="status-msg"></div>
+</div>
+
+<script>
+(() => {
+  // --- GLOBAL AUDIO & PITCH ENGINE (YIN Algorithm) ---
+  let audioCtx = null;
+  let micStream = null;
+  let analyser = null;
+  let isAudioActive = false;
+
+  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const TYPE_INFO = {
+    'shakuri': { label: 'しゃくり', color: '#e3a94c' },
+    'gyaku-shakuri': { label: '逆しゃくり', color: '#d19a66' },
+    'kobushi': { label: 'こぶし', color: '#98c379' },
+    'gyaku-kobushi': { label: '逆こぶし', color: '#7ec7a2' },
+    'vibrato': { label: 'ビブラート', color: '#61afef' },
+    'accent': { label: 'アクセント', color: '#e06c75' }
+  };
+
+  async function ensureMic(){
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+    if (!micStream) {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const source = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(analyser);
+    }
+    isAudioActive = true;
+  }
+
+  function detectPitch(buffer, sampleRate){
+    const SIZE = buffer.length;
+    let sum = 0;
+    for (let i = 0; i < SIZE; i++) sum += buffer[i] * buffer[i];
+    const rms = Math.sqrt(sum / SIZE);
+    if (rms < 0.015) return { pitch: null, rms };
+
+    const yin = new Float32Array(SIZE / 2);
+    yin[0] = 1;
+    let runningSum = 0;
+
+    for (let tau = 1; tau < SIZE / 2; tau++) {
+      let diffSum = 0;
+      for (let i = 0; i < SIZE / 2; i++) {
+        const delta = buffer[i] - buffer[i + tau];
+        diffSum += delta * delta;
+      }
+      yin[tau] = diffSum;
+      runningSum += diffSum;
+      if (runningSum > 0) {
+        yin[tau] *= tau / runningSum;
+      } else {
+        yin[tau] = 1;
+      }
+    }
+
+    let tauFound = -1;
+    const threshold = 0.15;
+    for (let tau = 2; tau < SIZE / 2; tau++) {
+      if (yin[tau] < threshold) {
+        while (tau + 1 < SIZE / 2 && yin[tau + 1] < yin[tau]) tau++;
+        tauFound = tau;
+        break;
+      }
+    }
+
+    if (tauFound === -1) return { pitch: null, rms };
+
+    // Quadratic interpolation
+    const x0 = tauFound > 0 ? tauFound - 1 : tauFound;
+    const x2 = tauFound + 1 < SIZE / 2 ? tauFound + 1 : tauFound;
+    let refinedTau = tauFound;
+    if (x0 !== tauFound && x2 !== tauFound) {
+      const a = yin[x0], b = yin[tauFound], c = yin[x2];
+      const bottom = a - 2 * b + c;
+      if (bottom !== 0) refinedTau = tauFound + (a - c) / (2 * bottom);
+    }
+
+    const pitch = sampleRate / refinedTau;
+    if (pitch < 60 || pitch > 1200) return { pitch: null, rms };
+
+    return { pitch, rms };
+  }
+
+  function pitchToNoteInfo(freq){
+    const midi = 69 + 12 * Math.log2(freq / 440);
+    const noteNum = Math.round(midi);
+    const cents = (midi - noteNum) * 100;
+    const name = NOTE_NAMES[((noteNum % 12) + 12) % 12];
+    const octave = Math.floor(noteNum / 12) - 1;
+    return { name: name + octave, cents, midi, freq };
+  }
+
+  // --- UI NAVIGATION ---
+  window.switchMode = function(modeId){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+
+    if (modeId === 'mode1'){
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('mode1').classList.add('active');
+    } else {
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('mode2').classList.add('active');
+    }
+  };
+
+  // --- MODE 1 LOGIC ---
+  const ringBar = document.getElementById('ringBar');
+  const pitchNameEl = document.getElementById('pitchName');
+  const pitchCentsEl = document.getElementById('pitchCents');
+  const scoreDisplayEl = document.getElementById('scoreDisplay');
+  const micBtn1 = document.getElementById('micBtn1');
+  const statusMsg1 = document.getElementById('statusMsg1');
+  const targetButtons = document.getElementById('targetButtons');
+
+  const TARGETS = ["A3", "C4", "E4", "G4", "A4", "C5"];
+  let selectedTarget = "A4";
+  let mode1Active = false;
+  let stabilityBuffer = [];
+
+  function buildNoteButtons(){
+    targetButtons.innerHTML = '';
+    TARGETS.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = `target-btn ${t === selectedTarget ? 'active' : ''}`;
+      btn.textContent = `目標: ${t}`;
+      btn.onclick = () => {
+        selectedTarget = t;
+        document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      };
+      targetButtons.appendChild(btn);
+    });
+  }
+
+  function updateRing(pitchInfo){
+    const circumference = 691;
+    if (!pitchInfo){
+      pitchNameEl.textContent = '--';
+      pitchCentsEl.textContent = '0 cent';
+      ringBar.style.strokeDashoffset = circumference;
+      ringBar.style.stroke = 'var(--accent-color)';
+      return;
+    }
+
+    pitchNameEl.textContent = pitchInfo.name;
+    const cVal = Math.round(pitchInfo.cents);
+    pitchCentsEl.textContent = `${cVal > 0 ? '+' : ''}${cVal} cent`;
+
+    // Stability calculation relative to pitch closeness
+    const absCents = Math.abs(pitchInfo.cents);
+    const accuracy = Math.max(0, 100 - absCents * 2);
+    stabilityBuffer.push(accuracy);
+    if (stabilityBuffer.length > 30) stabilityBuffer.shift();
+
+    const avgScore = Math.round(stabilityBuffer.reduce((a,b)=>a+b, 0) / stabilityBuffer.length);
+    scoreDisplayEl.textContent = `安定度: ${avgScore}%`;
+
+    const offset = circumference - (accuracy / 100) * circumference;
+    ringBar.style.strokeDashoffset = offset;
+
+    if (accuracy > 80) ringBar.style.stroke = 'var(--accent-gold)';
+    else if (accuracy > 50) ringBar.style.stroke = 'var(--accent-color)';
+    else ringBar.style.stroke = 'var(--accent-pink)';
+  }
+
+  function loopMode1(){
+    if (!mode1Active) return;
+    const buf = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buf);
+    const res = detectPitch(buf, audioCtx.sampleRate);
+
+    if (res.pitch) {
+      const info = pitchToNoteInfo(res.pitch);
+      updateRing(info);
+    } else {
+      updateRing(null);
+    }
+    requestAnimationFrame(loopMode1);
+  }
+
+  micBtn1.addEventListener('click', async () => {
+    try {
+      if (!mode1Active) {
+        await ensureMic();
+        mode1Active = true;
+        micBtn1.textContent = 'マイク停止';
+        micBtn1.classList.add('active-state');
+        statusMsg1.textContent = '音声解析中… 目標音高をロングトーンで出しましょう。';
+        loopMode1();
+      } else {
+        mode1Active = false;
+        micBtn1.textContent = 'マイク起動';
+        micBtn1.classList.remove('active-state');
+        statusMsg1.textContent = '停止中';
+        updateRing(null);
+      }
+    } catch(e) {
+      statusMsg1.textContent = 'マイクエラー: ' + e.message;
+    }
+  });
+
+
+  // --- MODE 2 LOGIC (Realtime Technique Analysis) ---
+  const recBtn = document.getElementById('recBtn');
+  const statusMsg2 = document.getElementById('statusMsg2');
+  const eventListEl = document.getElementById('eventList');
+  const chartCanvas = document.getElementById('pitchChart');
+  const chartCtx = chartCanvas.getContext('2d');
+
+  let streaming = false;
+  let streamRaf = null;
+  let liveBuffer = [];
+  let currentPhrase = [];
+  let allEvents = [];
+  let emittedKeys = new Set();
+  const WINDOW_SEC = 5;
+  let streamStartPerf = 0;
+
+  function streamLoop(){
+    if (!streaming) return;
+
+    const buf = new Float32Array(analyser.fftSize);
+    analyser.getFloatTimeDomainData(buf);
+    const res = detectPitch(buf, audioCtx.sampleRate);
+    const nowT = (performance.now() - streamStartPerf) / 1000;
+
+    let centsVal = null;
+    if (res.pitch){
+      const midi = 69 + 12 * Math.log2(res.pitch / 440);
+      centsVal = midi * 100;
+    }
+
+    const sample = { t: nowT, voiced: !!res.pitch, cents: centsVal, rms: res.rms };
+    liveBuffer.push(sample);
+
+    // Keep memory clean
+    if (liveBuffer.length > 1000) liveBuffer.shift();
+
+    if (sample.voiced){
+      currentPhrase.push(sample);
+    } else {
+      if (currentPhrase.length > 0){
+        processPhrase(currentPhrase);
+        currentPhrase = [];
+      }
+    }
+
+    if (currentPhrase.length >= 10){
+      processPhrase(currentPhrase);
+    }
+
+    drawLiveChart(nowT);
+    streamRaf = requestAnimationFrame(streamLoop);
+  }
+
+  function processPhrase(phrase){
+    const detected = analyzePhrase(phrase);
+    detected.forEach(ev => {
+      const key = `${ev.type}_${ev.time.toFixed(1)}`;
+      if (!emittedKeys.has(key)){
+        emittedKeys.add(key);
+        allEvents.push(ev);
+        renderEventItem(ev);
       }
     });
   }
@@ -11,11 +517,11 @@ renderEventItem(ev);
     const item = document.createElement('div');
     item.className = 'event-item';
     item.innerHTML = `
-      <div class="dot" style="background:${info.color}"></div>
-      <div class="ev-body">
+      <div style="display:flex; align-items:center;">
+        <div class="dot" style="background:${info.color}"></div>
         <div class="ev-type" style="color:${info.color}">${info.label}</div>
-        <div class="ev-detail">${ev.detail || ''}</div>
       </div>
+      <div style="font-size:0.8rem; color:var(--text-secondary);">${ev.detail || ''}</div>
       <div class="ev-time">${ev.time.toFixed(1)}s</div>
     `;
     eventListEl.insertBefore(item, eventListEl.firstChild);
@@ -39,7 +545,7 @@ renderEventItem(ev);
       }
     }
 
-    // Centered reference line (A4)
+    // Centered reference line
     chartCtx.strokeStyle = 'rgba(227,169,76,0.3)';
     chartCtx.beginPath(); chartCtx.moveTo(0, h/2); chartCtx.lineTo(w, h/2); chartCtx.stroke();
 
@@ -56,7 +562,6 @@ renderEventItem(ev);
       if (s.t < minT) continue;
       if (s.voiced && s.cents !== null){
         const x = tToX(s.t);
-        // Normalize centered pitch
         const y = h/2 - ((s.cents % 1200) / 600) * (h/3);
         if (!drawing){ chartCtx.moveTo(x, y); drawing = true; }
         else { chartCtx.lineTo(x, y); }
@@ -80,10 +585,10 @@ renderEventItem(ev);
     });
   }
 
-  // ---- TECHNIQUE DETECTION ALGORITHMS ----
+  // ---- ADJUSTED TECHNIQUE DETECTION ALGORITHMS ----
   function analyzePhrase(phrase){
     const events = [];
-    if (phrase.length < 5) return events;
+    if (phrase.length < 3) return events;
 
     const dt = phrase[phrase.length - 1].t - phrase[0].t;
     if (dt <= 0) return events;
@@ -93,92 +598,42 @@ renderEventItem(ev);
     if (onsetSpan.length >= 3){
       const cents = onsetSpan.map(s => s.cents);
       const diff = cents[cents.length - 1] - cents[0];
-      if (diff >= 80 && diff <= 400){
+      if (diff >= 60 && diff <= 400){
         events.push({ type: 'shakuri', time: onsetSpan[0].t, detail: `+${Math.round(diff)} cents` });
-      } else if (diff <= -80 && diff >= -400){
+      } else if (diff <= -60 && diff >= -400){
         events.push({ type: 'gyaku-shakuri', time: onsetSpan[0].t, detail: `${Math.round(diff)} cents` });
       }
     }
 
-    // 2. Kobushi & Gyaku-kobushi (Quick pitch dip/bump inside sustained note)
+    // 2. Kobushi & Gyaku-kobushi (Relaxed Threshold for smoother detection)
     for (let i = 2; i < phrase.length - 2; i++){
       const prev = phrase[i-2].cents, curr = phrase[i].cents, next = phrase[i+2].cents;
       const t = phrase[i].t;
       const dtLocal = phrase[i+2].t - phrase[i-2].t;
-      if (dtLocal > 0.08 && dtLocal < 0.35){
+      
+      // 時間幅: 0.05秒〜0.50秒 / 音程差: 40〜350セント（半音弱〜3半音）
+      if (dtLocal > 0.05 && dtLocal < 0.50){
         const dip = curr - ((prev + next) / 2);
-        if (dip <= -70 && dip >= -300){
+        if (dip <= -40 && dip >= -350){
           events.push({ type: 'kobushi', time: t, detail: `装飾音 (込)` });
-        } else if (dip >= 70 && dip <= 300){
+        } else if (dip >= 40 && dip <= 350){
           events.push({ type: 'gyaku-kobushi', time: t, detail: `装飾音 (逆)` });
         }
       }
     }
 
-    // 3. Vibrato (Periodic pitch modulation 4-8Hz)
-    if (phrase.length >= 12){
+    // 3. Vibrato (Periodic pitch modulation 4-8.5Hz)
+    if (phrase.length >= 10){
       let zeroCrossings = 0;
       const mean = phrase.reduce((a, b) => a + b.cents, 0) / phrase.length;
       for (let i = 1; i < phrase.length; i++){
         if ((phrase[i-1].cents - mean) * (phrase[i].cents - mean) < 0) zeroCrossings++;
       }
       const rate = (zeroCrossings / 2) / dt;
-      if (rate >= 4.0 && rate <= 8.5 && dt >= 0.6){
+      if (rate >= 3.8 && rate <= 8.5 && dt >= 0.5){
         const maxC = Math.max(...phrase.map(s => s.cents));
         const minC = Math.min(...phrase.map(s => s.cents));
         const depth = (maxC - minC) / 2;
-        if (depth >= 15 && depth <= 120){
-          events.push({ type: 'vibrato', time: phrase[0].t, detail: `${rate.toFixed(1)}Hz / ±${Math.round(depth)}cents` });
+        if (depth >= 12 && depth <= 120){
+          events.push({ type: 'vibrato', time: phrase[0].t, detail: `${rate.toFixed(1)}Hz / ±${Math.round(depth)}c` });
         }
-      }
-    }
-
-    // 4. Accent (Sudden volume pulse)
-    for (let i = 1; i < phrase.length; i++){
-      const dRms = phrase[i].rms - phrase[i-1].rms;
-      if (dRms > 0.08){
-        events.push({ type: 'accent', time: phrase[i].t, detail: `音量アタック` });
-      }
-    }
-
-    return events;
-  }
-
-  async function startStreaming(){
-    try{
-      statusMsg2.textContent = 'マイクへのアクセスを許可してください…';
-      await ensureMic();
-      streaming = true;
-      recBtn.textContent = '分析を停止する';
-      recBtn.classList.add('active-state');
-      statusMsg2.textContent = '声を出すと、ピッチ軌跡とテクニックがリアルタイム表示されます。';
-      
-      streamStartPerf = performance.now();
-      liveBuffer = []; currentPhrase = []; allEvents = []; emittedKeys.clear();
-      eventListEl.innerHTML = '<div class="empty-note">検出されたテクニックがここに表示されます</div>';
-      
-      streamLoop();
-    } catch(e){
-      statusMsg2.textContent = 'マイクエラー: ' + e.message;
-    }
-  }
-
-  function stopStreaming(){
-    if (!streaming) return;
-    streaming = false;
-    if (streamRaf) cancelAnimationFrame(streamRaf);
-    recBtn.textContent = 'リアルタイム分析を開始する';
-    recBtn.classList.remove('active-state');
-    statusMsg2.textContent = '';
-    recTimer.textContent = '';
-  }
-
-  recBtn.addEventListener('click', () => { streaming ? stopStreaming() : startStreaming(); });
-
-  // Init
-  buildNoteButtons();
-  loadBest();
-})();
-</script>
-</body>
-</html>
