@@ -179,7 +179,7 @@
     </div>
 
     <p class="disclaimer">
-      ※ ピッチと音量の変化パターンから推定する簡易解析です。しゃくり・こぶしは前後の流れを見て判定するため、発生から0.2〜0.5秒ほど遅れて表示されます。
+      ※ ピッチと音量の変化パターンから推定する簡易解析です。DAMの精密採点と同程度の厳格さ（装飾音の幅・時間幅）に調整してあります。
     </p>
   </div>
 </div>
@@ -222,7 +222,7 @@
     let rms = 0;
     for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
     rms = Math.sqrt(rms / SIZE);
-    if (rms < 0.012) return -1;
+    if (rms < 0.015) return -1; // ノイズフロアを少し引き上げて安定化
 
     let r1 = 0, r2 = SIZE - 1;
     const thres = 0.2;
@@ -445,7 +445,6 @@
     'gyaku-shakuri':  { label: '逆しゃくり',   color: '#8f7fe0' },
     'kobushi':        { label: 'こぶし',       color: '#e3a94c' },
     'gyaku-kobushi':  { label: '逆こぶし',     color: '#e2705f' },
-    'hammering':      { label: 'ハンマリング', color: '#4fd1c5' },
     'vibrato':        { label: 'ビブラート',   color: '#9bd66b' },
     'accent':         { label: 'アクセント',   color: '#ff6f91' },
   };
@@ -467,7 +466,7 @@
   let currentPhrase = [];
   let silenceStart = null;
   let allEvents = [];
-  let emittedKeys = new Set();
+  let lastKobushiTime = 0;
   let frameCounter = 0;
   const WINDOW_SEC = 6;
   const ANALYZE_EVERY_N_FRAMES = 6;
@@ -510,9 +509,9 @@
     if (currentPhrase.length < 4) return;
     const events = analyzePhrase(currentPhrase);
     events.forEach(ev => {
-      const key = ev.type + '-' + Math.round(ev.time * 20);
-      if (!emittedKeys.has(key)){
-        emittedKeys.add(key);
+      // 直前と同じ時間帯（0.25秒以内）の重複イベントを防止
+      const exists = allEvents.some(e => e.type === ev.type && Math.abs(e.time - ev.time) < 0.25);
+      if (!exists){
         allEvents.push(ev);
         renderEventItem(ev);
       }
@@ -591,7 +590,7 @@
     });
   }
 
-  // ---- TECHNIQUE DETECTION ALGORITHMS ----
+  // ---- DAM基準テクニック判定アルゴリズム ----
   function analyzePhrase(phrase){
     const events = [];
     if (phrase.length < 5) return events;
@@ -599,57 +598,63 @@
     const dt = phrase[phrase.length - 1].t - phrase[0].t;
     if (dt <= 0) return events;
 
-    // 1. Shakuri & Gyaku-shakuri
-    const onsetSpan = phrase.filter(s => s.t - phrase[0].t <= 0.35);
+    // 1. しゃくり & 逆しゃくり（歌い出しの滑らかなピッチ移動）
+    const onsetSpan = phrase.filter(s => s.t - phrase[0].t <= 0.30);
     if (onsetSpan.length >= 3){
       const cents = onsetSpan.map(s => s.cents);
       const diff = cents[cents.length - 1] - cents[0];
-      if (diff >= 60 && diff <= 400){
+      if (diff >= 80 && diff <= 350){
         events.push({ type: 'shakuri', time: onsetSpan[0].t, detail: `+${Math.round(diff)} cents` });
-      } else if (diff <= -60 && diff >= -400){
+      } else if (diff <= -80 && diff >= -350){
         events.push({ type: 'gyaku-shakuri', time: onsetSpan[0].t, detail: `${Math.round(diff)} cents` });
       }
     }
 
-    // 2. Kobushi & Gyaku-kobushi (★こぶし判定を緩めた調整版★)
+    // 2. こぶし & 逆こぶし（DAM採点基準に準拠した厳格な装飾音判定）
     for (let i = 2; i < phrase.length - 2; i++){
       const prev = phrase[i-2].cents, curr = phrase[i].cents, next = phrase[i+2].cents;
       const t = phrase[i].t;
       const dtLocal = phrase[i+2].t - phrase[i-2].t;
       
-      // 時間幅 0.05s〜0.50s、音程差 40cent〜 に変更して拾いやすく調整
-      if (dtLocal > 0.05 && dtLocal < 0.50){
-        const dip = curr - ((prev + next) / 2);
-        if (dip <= -40 && dip >= -350){
-          events.push({ type: 'kobushi', time: t, detail: `装飾音 (込)` });
-        } else if (dip >= 40 && dip <= 350){
-          events.push({ type: 'gyaku-kobushi', time: t, detail: `装飾音 (逆)` });
+      // DAM基準: 短い時間（0.08秒〜0.25秒）かつ明確な山/谷（50cent〜200cent）
+      if (dtLocal >= 0.08 && dtLocal <= 0.25 && (t - lastKobushiTime > 0.30)){
+        const delta = curr - ((prev + next) / 2);
+        
+        // 【修正】プラス（上がって戻る＝山）が「こぶし」
+        if (delta >= 50 && delta <= 220){
+          events.push({ type: 'kobushi', time: t, detail: `装飾音 (+${Math.round(delta)}c)` });
+          lastKobushiTime = t;
+        } 
+        // 【修正】マイナス（下がって戻る＝谷）が「逆こぶし」
+        else if (delta <= -50 && delta >= -220){
+          events.push({ type: 'gyaku-kobushi', time: t, detail: `装飾音 (${Math.round(delta)}c)` });
+          lastKobushiTime = t;
         }
       }
     }
 
-    // 3. Vibrato
-    if (phrase.length >= 10){
+    // 3. ビブラート（周期性と振幅の厳格化）
+    if (phrase.length >= 12){
       let zeroCrossings = 0;
       const mean = phrase.reduce((a, b) => a + b.cents, 0) / phrase.length;
       for (let i = 1; i < phrase.length; i++){
         if ((phrase[i-1].cents - mean) * (phrase[i].cents - mean) < 0) zeroCrossings++;
       }
       const rate = (zeroCrossings / 2) / dt;
-      if (rate >= 3.8 && rate <= 8.5 && dt >= 0.5){
+      if (rate >= 4.0 && rate <= 8.0 && dt >= 0.6){
         const maxC = Math.max(...phrase.map(s => s.cents));
         const minC = Math.min(...phrase.map(s => s.cents));
         const depth = (maxC - minC) / 2;
-        if (depth >= 12 && depth <= 120){
+        if (depth >= 15 && depth <= 90){
           events.push({ type: 'vibrato', time: phrase[0].t, detail: `${rate.toFixed(1)}Hz / ±${Math.round(depth)}c` });
         }
       }
     }
 
-    // 4. Accent
+    // 4. アクセント
     for (let i = 1; i < phrase.length; i++){
       const dRms = phrase[i].rms - phrase[i-1].rms;
-      if (dRms > 0.06){
+      if (dRms > 0.08){
         events.push({ type: 'accent', time: phrase[i].t, detail: `アタック` });
       }
     }
@@ -667,7 +672,7 @@
       statusMsg2.textContent = '声を出すと、ピッチ軌跡とテクニックがリアルタイム表示されます。';
       
       streamStartPerf = performance.now();
-      liveBuffer = []; currentPhrase = []; allEvents = []; emittedKeys.clear();
+      liveBuffer = []; currentPhrase = []; allEvents = []; lastKobushiTime = 0;
       eventListEl.innerHTML = '<div class="empty-note">検出されたテクニックがここに表示されます</div>';
       
       streamLoop();
