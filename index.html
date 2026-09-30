@@ -3,504 +3,514 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pitch Ring - ピッチリング</title>
+<title>ピッチリング | 発声トレーニング & テクニック分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg-color: #121319;
-    --card-bg: #1c1e26;
-    --accent-color: #5b9dd6;
-    --accent-gold: #e3a94c;
-    --accent-pink: #e06c75;
-    --text-primary: #e6e8ee;
-    --text-secondary: #8b92a5;
-    --border-color: #2e3240;
+  :root{
+    --ink: #171a2b;
+    --surface: #22273f;
+    --surface-2: #2c3352;
+    --gold: #e3a94c;
+    --coral: #e2705f;
+    --cool: #5b9dd6;
+    --text: #f3efe6;
+    --text-dim: #a6acc9;
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-
-  body {
-    background-color: var(--bg-color);
-    color: var(--text-primary);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px 10px;
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: radial-gradient(ellipse at 50% -10%, #2a3050 0%, var(--ink) 55%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
     min-height: 100vh;
+    display:flex;
+    justify-content:center;
+    padding: 24px 16px 40px;
   }
+  .app{ width:100%; max-width: 440px; }
+  header{ text-align:center; margin-bottom: 16px; }
+  header h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 24px;
+    margin: 0 0 4px;
+  }
+  header p{ margin:0; font-size: 13px; color: var(--text-dim); }
 
-  header {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-  header h1 { font-size: 1.8rem; color: var(--accent-gold); font-weight: 700; letter-spacing: 1px; }
-  header p { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
-
-  .nav-tabs {
-    display: flex;
-    background: var(--card-bg);
-    border-radius: 30px;
-    padding: 4px;
-    margin-bottom: 20px;
-    border: 1px solid var(--border-color);
-  }
-  .tab-btn {
-    padding: 8px 18px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
-    border-radius: 20px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-  }
-  .tab-btn.active {
-    background: var(--accent-color);
-    color: #fff;
-  }
-
-  .mode-panel {
-    display: none;
-    width: 100%;
-    max-width: 500px;
-    flex-direction: column;
-    align-items: center;
-  }
-  .mode-panel.active { display: flex; }
-
-  /* --- MODE 1: RING STABILITY --- */
-  .ring-container {
-    position: relative;
-    width: 260px;
-    height: 260px;
-    margin: 15px 0;
-  }
-  .ring-svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-  }
-  .ring-bg {
-    fill: none;
-    stroke: var(--border-color);
-    stroke-width: 12;
-  }
-  .ring-bar {
-    fill: none;
-    stroke: var(--accent-color);
-    stroke-width: 12;
-    stroke-linecap: round;
-    stroke-dasharray: 691; /* 2 * PI * 110 */
-    stroke-dashoffset: 691;
-    transition: stroke-dashoffset 0.1s linear, stroke 0.3s;
-  }
-  .ring-center {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-  .pitch-name { font-size: 2.8rem; font-weight: 800; color: #fff; text-shadow: 0 0 10px rgba(91,157,214,0.3); }
-  .pitch-cents { font-size: 1rem; color: var(--text-secondary); margin-top: -4px; }
-  .score-display { font-size: 1.2rem; font-weight: 700; color: var(--accent-gold); margin-top: 6px; }
-
-  .target-select {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 15px;
-  }
-  .target-btn {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-primary);
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.85rem;
-  }
-  .target-btn.active {
-    border-color: var(--accent-gold);
-    color: var(--accent-gold);
-    background: rgba(227,169,76,0.1);
-  }
-
-  /* --- MODE 2: REALTIME TECHNIQUE DETECTOR --- */
-  .chart-card {
-    width: 100%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 15px;
-  }
-  canvas {
-    width: 100%;
-    height: 160px;
-    background: #161820;
-    border-radius: 8px;
-    display: block;
-  }
-
-  .event-list {
-    width: 100%;
-    max-height: 180px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+  .tabs{
+    display:flex;
     gap: 6px;
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 5px;
+    margin-bottom: 18px;
   }
-  .event-item {
-    background: #161820;
-    border-left: 4px solid var(--accent-color);
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .event-item .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  .event-item .ev-type { font-weight: bold; }
-  .event-item .ev-time { font-size: 0.75rem; color: var(--text-secondary); }
-
-  .action-btn {
-    width: 100%;
-    max-width: 300px;
-    padding: 12px;
-    background: var(--accent-color);
-    color: #fff;
+  .tabs button{
+    flex:1;
+    padding: 10px 0;
     border: none;
-    border-radius: 25px;
-    font-size: 1rem;
-    font-weight: bold;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-dim);
+    font-family:'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(91,157,214,0.3);
-    margin-top: 10px;
   }
-  .action-btn.active-state { background: var(--accent-pink); box-shadow: 0 4px 12px rgba(224,108,117,0.3); }
+  .tabs button.active{ background: var(--gold); color: #1b1a12; }
+  .tabs button:focus-visible{ outline:2px solid var(--text); outline-offset:2px; }
 
-  .status-msg { font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; height: 18px; }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  /* ---- Mode 1: practice ring ---- */
+  .ring-wrap{ position: relative; width: 260px; height: 260px; margin: 4px auto 18px; }
+  canvas#ring{ width:100%; height:100%; display:block; }
+  .ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
+  .note{ font-family:'Fraunces', serif; font-size: 40px; font-weight:600; line-height:1; }
+  .freq{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-dim); margin-top:6px; }
+  .cents{ font-family:'JetBrains Mono', monospace; font-size:12px; margin-top:4px; min-height:16px; }
+
+  .card{ background: var(--surface); border-radius: 16px; padding: 14px 16px 16px; margin-bottom: 14px; }
+  .card .label{ font-size:12px; color:var(--text-dim); display:block; margin-bottom:10px; }
+
+  .notes{ display:grid; grid-template-columns: repeat(8, 1fr); gap:6px; }
+  .notes button{
+    background: var(--surface-2); border:none; color:var(--text); font-size:13px; font-weight:500;
+    padding:10px 0; border-radius:9px; cursor:pointer;
+  }
+  .notes button.active{ background: var(--gold); color:#1b1a12; }
+  .notes button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+
+  .primary-btn{
+    width:100%; padding:15px 0; border-radius:14px; border:none;
+    background: var(--gold); color:#1b1a12; font-size:15px; font-weight:600; cursor:pointer;
+    font-family:'Inter', sans-serif; margin-bottom: 12px;
+  }
+  .primary-btn.active-state{ background: var(--surface-2); color:var(--text); }
+  .primary-btn:focus-visible{ outline:2px solid var(--text); outline-offset:2px; }
+  .primary-btn:disabled{ opacity:0.55; cursor:default; }
+
+  .status{ text-align:center; font-size:12px; color:var(--text-dim); min-height:16px; margin-bottom:12px; }
+
+  .stats{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; text-align:center; }
+  .stats > div{ background: var(--surface); border-radius:14px; padding:14px 4px; }
+  .stats span{ font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:600; display:block; }
+  .stats small{ font-size:10px; color:var(--text-dim); }
+
+  /* ---- Mode 2: technique analysis ---- */
+  .rec-row{ display:flex; align-items:center; gap:10px; margin-bottom: 4px; }
+  .rec-timer{
+    font-family:'JetBrains Mono', monospace; font-size: 13px; color: var(--text-dim);
+    text-align:center; margin-bottom: 12px;
+  }
+  .chart-wrap{ background: var(--surface); border-radius:16px; padding: 12px 10px 6px; margin-bottom:14px; overflow-x:auto; }
+  canvas#chart{ width:100%; height:200px; display:block; }
+  .legend{ display:flex; flex-wrap:wrap; gap: 8px 14px; padding: 6px 4px 2px; }
+  .legend span{ font-size:11px; color: var(--text-dim); display:flex; align-items:center; gap:5px; }
+  .legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+  .event-list{ display:flex; flex-direction:column; gap:8px; }
+  .event-item{
+    background: var(--surface); border-radius: 12px; padding: 10px 12px;
+    display:flex; align-items:center; gap:10px; font-size:13px;
+  }
+  .event-item .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .event-item .ev-body{ flex:1; }
+  .event-item .ev-type{ font-weight:600; }
+  .event-item .ev-detail{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); }
+  .event-item .ev-time{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-dim); }
+  .empty-note{ text-align:center; font-size:12px; color:var(--text-dim); padding: 14px 0; }
+  .disclaimer{ font-size:11px; color:var(--text-dim); line-height:1.6; margin-top: 16px; padding: 0 4px; }
 </style>
 </head>
 <body>
+<div class="app">
+  <header>
+    <h1>ピッチリング</h1>
+    <p>音程練習 & テクニック分析</p>
+  </header>
 
-<header>
-  <h1>PITCH RING</h1>
-  <p>ボイストレーニング・リアルタイム解析ツール</p>
-</header>
+  <div class="tabs">
+    <button id="tabBtn1" class="active">🎯 音程練習</button>
+    <button id="tabBtn2">🎤 テクニック分析</button>
+  </div>
 
-<div class="nav-tabs">
-  <button class="tab-btn active" onclick="switchMode('mode1')">ロングトーン判定</button>
-  <button class="tab-btn" onclick="switchMode('mode2')">テクニック分析</button>
-</div>
+  <!-- ============ MODE 1: PRACTICE ============ -->
+  <div class="panel active" id="panel1">
+    <div class="ring-wrap">
+      <canvas id="ring" width="260" height="260"></canvas>
+      <div class="ring-center">
+        <div class="note" id="noteName">ー</div>
+        <div class="freq" id="freqVal">0.0 Hz</div>
+        <div class="cents" id="centsVal"></div>
+      </div>
+    </div>
 
-<!-- MODE 1 -->
-<div id="mode1" class="mode-panel active">
-  <div class="target-select" id="targetButtons"></div>
+    <div class="card">
+      <span class="label">目標の音を選ぶ</span>
+      <div class="notes" id="noteButtons"></div>
+    </div>
 
-  <div class="ring-container">
-    <svg class="ring-svg" viewBox="0 0 240 240">
-      <circle class="ring-bg" cx="120" cy="120" r="110"></circle>
-      <circle id="ringBar" class="ring-bar" cx="120" cy="120" r="110"></circle>
-    </svg>
-    <div class="ring-center">
-      <div id="pitchName" class="pitch-name">--</div>
-      <div id="pitchCents" class="pitch-cents">0 cent</div>
-      <div id="scoreDisplay" class="score-display">安定度: 0%</div>
+    <button class="primary-btn" id="micBtn">マイクを開始する</button>
+    <div class="status" id="statusMsg"></div>
+
+    <div class="stats">
+      <div><span id="streakVal">0.0</span><small>キープ秒数</small></div>
+      <div><span id="accuracyVal">0%</span><small>正確度</small></div>
+      <div><span id="bestVal">0.0</span><small>自己ベスト</small></div>
     </div>
   </div>
 
-  <button id="micBtn1" class="action-btn">マイク起動</button>
-  <div id="statusMsg1" class="status-msg"></div>
-</div>
+  <!-- ============ MODE 2: TECHNIQUE ANALYSIS ============ -->
+  <div class="panel" id="panel2">
+    <button class="primary-btn" id="recBtn">リアルタイム分析を開始する</button>
+    <div class="rec-timer" id="recTimer"></div>
+    <div class="status" id="statusMsg2"></div>
 
-<!-- MODE 2 -->
-<div id="mode2" class="mode-panel">
-  <div class="chart-card">
-    <canvas id="pitchChart" width="480" height="160"></canvas>
-  </div>
-
-  <div class="event-list" id="eventList">
-    <div class="empty-note" style="color: var(--text-secondary); text-align: center; font-size: 0.85rem; padding: 20px;">
-      声を出すと、検出されたテクニック（こぶし・しゃくり等）がここに表示されます
+    <div class="chart-wrap">
+      <canvas id="chart" width="640" height="200"></canvas>
+      <div class="legend" id="legend"></div>
     </div>
-  </div>
 
-  <button id="recBtn" class="action-btn">リアルタイム分析を開始</button>
-  <div id="recTimer" style="font-size:0.8rem; color:var(--accent-gold); margin-top:4px;"></div>
-  <div id="statusMsg2" class="status-msg"></div>
+    <div class="event-list" id="eventList">
+      <div class="empty-note">開始すると、検出されたテクニックがここに新しい順で表示されます</div>
+    </div>
+
+    <p class="disclaimer">
+      ※ ピッチと音量の変化パターンから推定する簡易解析です。しゃくり・こぶしは前後の流れを見て判定するため、発生から0.2〜0.5秒ほど遅れて表示されます。
+    </p>
+  </div>
 </div>
 
 <script>
-(() => {
-  // --- GLOBAL AUDIO & PITCH ENGINE (YIN Algorithm) ---
-  let audioCtx = null;
-  let micStream = null;
-  let analyser = null;
-  let isAudioActive = false;
-
-  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const TYPE_INFO = {
-    'shakuri': { label: 'しゃくり', color: '#e3a94c' },
-    'gyaku-shakuri': { label: '逆しゃくり', color: '#d19a66' },
-    'kobushi': { label: 'こぶし', color: '#98c379' },
-    'gyaku-kobushi': { label: '逆こぶし', color: '#7ec7a2' },
-    'vibrato': { label: 'ビブラート', color: '#61afef' },
-    'accent': { label: 'アクセント', color: '#e06c75' }
-  };
+(function(){
+  // ============ SHARED AUDIO SETUP ============
+  let audioCtx, analyser, dataArray, micStream, micReady = false;
 
   async function ensureMic(){
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (micReady) return true;
+
+    if (!window.isSecureContext){
+      throw new Error('このページは安全な接続(HTTPS)で開かれていません。');
     }
-    if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      throw new Error('マイク機能がサポートされていません。');
     }
-    if (!micStream) {
-      micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-      const source = audioCtx.createMediaStreamSource(micStream);
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(analyser);
+
+    let stream;
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch(err){
+      throw new Error(`[${err.name}] ${err.message || '詳細不明のエラー'}`);
     }
-    isAudioActive = true;
+
+    micStream = stream;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    dataArray = new Float32Array(analyser.fftSize);
+    const source = audioCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
+    micReady = true;
+    return true;
   }
 
-  function detectPitch(buffer, sampleRate){
-    const SIZE = buffer.length;
-    let sum = 0;
-    for (let i = 0; i < SIZE; i++) sum += buffer[i] * buffer[i];
-    const rms = Math.sqrt(sum / SIZE);
-    if (rms < 0.015) return { pitch: null, rms };
+  function autoCorrelate(buf, sampleRate){
+    const SIZE = buf.length;
+    let rms = 0;
+    for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+    rms = Math.sqrt(rms / SIZE);
+    if (rms < 0.012) return -1;
 
-    const yin = new Float32Array(SIZE / 2);
-    yin[0] = 1;
-    let runningSum = 0;
+    let r1 = 0, r2 = SIZE - 1;
+    const thres = 0.2;
+    for (let i = 0; i < SIZE / 2; i++){ if (Math.abs(buf[i]) < thres) { r1 = i; break; } }
+    for (let i = 1; i < SIZE / 2; i++){ if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; } }
+    const trimmed = buf.slice(r1, r2);
+    const n = trimmed.length;
+    if (n < 8) return -1;
 
-    for (let tau = 1; tau < SIZE / 2; tau++) {
-      let diffSum = 0;
-      for (let i = 0; i < SIZE / 2; i++) {
-        const delta = buffer[i] - buffer[i + tau];
-        diffSum += delta * delta;
-      }
-      yin[tau] = diffSum;
-      runningSum += diffSum;
-      if (runningSum > 0) {
-        yin[tau] *= tau / runningSum;
-      } else {
-        yin[tau] = 1;
-      }
+    const c = new Array(n).fill(0);
+    for (let i = 0; i < n; i++){
+      for (let j = 0; j < n - i; j++) c[i] += trimmed[j] * trimmed[j + i];
     }
-
-    let tauFound = -1;
-    const threshold = 0.15;
-    for (let tau = 2; tau < SIZE / 2; tau++) {
-      if (yin[tau] < threshold) {
-        while (tau + 1 < SIZE / 2 && yin[tau + 1] < yin[tau]) tau++;
-        tauFound = tau;
-        break;
-      }
-    }
-
-    if (tauFound === -1) return { pitch: null, rms };
-
-    // Quadratic interpolation
-    const x0 = tauFound > 0 ? tauFound - 1 : tauFound;
-    const x2 = tauFound + 1 < SIZE / 2 ? tauFound + 1 : tauFound;
-    let refinedTau = tauFound;
-    if (x0 !== tauFound && x2 !== tauFound) {
-      const a = yin[x0], b = yin[tauFound], c = yin[x2];
-      const bottom = a - 2 * b + c;
-      if (bottom !== 0) refinedTau = tauFound + (a - c) / (2 * bottom);
-    }
-
-    const pitch = sampleRate / refinedTau;
-    if (pitch < 60 || pitch > 1200) return { pitch: null, rms };
-
-    return { pitch, rms };
+    let d = 0;
+    while (d < n - 1 && c[d] > c[d + 1]) d++;
+    let maxVal = -1, maxPos = -1;
+    for (let i = d; i < n; i++){ if (c[i] > maxVal){ maxVal = c[i]; maxPos = i; } }
+    if (maxPos <= 0) return -1;
+    let T0 = maxPos;
+    const x1 = c[T0 - 1] !== undefined ? c[T0 - 1] : c[T0];
+    const x2 = c[T0];
+    const x3 = c[T0 + 1] !== undefined ? c[T0 + 1] : c[T0];
+    const a = (x1 + x3 - 2 * x2) / 2;
+    const b = (x3 - x1) / 2;
+    if (a) T0 = T0 - b / (2 * a);
+    if (T0 <= 0) return -1;
+    return sampleRate / T0;
   }
 
-  function pitchToNoteInfo(freq){
-    const midi = 69 + 12 * Math.log2(freq / 440);
-    const noteNum = Math.round(midi);
-    const cents = (midi - noteNum) * 100;
-    const name = NOTE_NAMES[((noteNum % 12) + 12) % 12];
-    const octave = Math.floor(noteNum / 12) - 1;
-    return { name: name + octave, cents, midi, freq };
+  function rmsOf(buf){
+    let s = 0;
+    for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+    return Math.sqrt(s / buf.length);
   }
 
-  // --- UI NAVIGATION ---
-  window.switchMode = function(modeId){
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+  const noteNamesJP = ['ド','ド#','レ','レ#','ミ','ファ','ファ#','ソ','ソ#','ラ','ラ#','シ'];
+  function midiFromFreq(f){ return 69 + 12 * Math.log2(f / 440); }
+  function noteLabelFromMidi(m){
+    const rounded = Math.round(m);
+    const idx = ((rounded % 12) + 12) % 12;
+    const octave = Math.floor(rounded / 12) - 1;
+    return noteNamesJP[idx] + octave;
+  }
 
-    if (modeId === 'mode1'){
-      document.querySelectorAll('.tab-btn')[0].classList.add('active');
-      document.getElementById('mode1').classList.add('active');
-    } else {
-      document.querySelectorAll('.tab-btn')[1].classList.add('active');
-      document.getElementById('mode2').classList.add('active');
-    }
-  };
+  // ============ TABS ============
+  const tabBtn1 = document.getElementById('tabBtn1');
+  const tabBtn2 = document.getElementById('tabBtn2');
+  const panel1 = document.getElementById('panel1');
+  const panel2 = document.getElementById('panel2');
 
-  // --- MODE 1 LOGIC ---
-  const ringBar = document.getElementById('ringBar');
-  const pitchNameEl = document.getElementById('pitchName');
-  const pitchCentsEl = document.getElementById('pitchCents');
-  const scoreDisplayEl = document.getElementById('scoreDisplay');
-  const micBtn1 = document.getElementById('micBtn1');
-  const statusMsg1 = document.getElementById('statusMsg1');
-  const targetButtons = document.getElementById('targetButtons');
+  tabBtn1.addEventListener('click', () => {
+    stopPractice();
+    stopStreaming();
+    tabBtn1.classList.add('active'); tabBtn2.classList.remove('active');
+    panel1.classList.add('active'); panel2.classList.remove('active');
+  });
+  tabBtn2.addEventListener('click', () => {
+    stopPractice();
+    tabBtn2.classList.add('active'); tabBtn1.classList.remove('active');
+    panel2.classList.add('active'); panel1.classList.remove('active');
+  });
 
-  const TARGETS = ["A3", "C4", "E4", "G4", "A4", "C5"];
-  let selectedTarget = "A4";
-  let mode1Active = false;
-  let stabilityBuffer = [];
+  // ============ MODE 1: PRACTICE RING ============
+  const scale = [
+    { label: 'ド', note: 60 }, { label: 'レ', note: 62 }, { label: 'ミ', note: 64 }, { label: 'ファ', note: 65 },
+    { label: 'ソ', note: 67 }, { label: 'ラ', note: 69 }, { label: 'シ', note: 71 }, { label: 'ド', note: 72 },
+  ];
+  const noteButtonsEl = document.getElementById('noteButtons');
+  const micBtn = document.getElementById('micBtn');
+  const statusMsg = document.getElementById('statusMsg');
+  const noteNameEl = document.getElementById('noteName');
+  const freqValEl = document.getElementById('freqVal');
+  const centsValEl = document.getElementById('centsVal');
+  const streakValEl = document.getElementById('streakVal');
+  const accuracyValEl = document.getElementById('accuracyVal');
+  const bestValEl = document.getElementById('bestVal');
+  const ringCanvas = document.getElementById('ring');
+  const ringCtx = ringCanvas.getContext('2d');
+
+  let targetMidi = 69;
+  let practicing = false;
+  let practiceRaf;
+  let smoothedCents = 0;
+  let streakStart = null;
+  let bestStreak = 0;
+  let framesInTune = 0, framesTotal = 0;
 
   function buildNoteButtons(){
-    targetButtons.innerHTML = '';
-    TARGETS.forEach(t => {
+    scale.forEach((n) => {
       const btn = document.createElement('button');
-      btn.className = `target-btn ${t === selectedTarget ? 'active' : ''}`;
-      btn.textContent = `目標: ${t}`;
-      btn.onclick = () => {
-        selectedTarget = t;
-        document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+      btn.textContent = n.label;
+      if (n.note === targetMidi) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        targetMidi = n.note;
+        document.querySelectorAll('#noteButtons button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-      };
-      targetButtons.appendChild(btn);
+        resetSession();
+      });
+      noteButtonsEl.appendChild(btn);
     });
   }
 
-  function updateRing(pitchInfo){
-    const circumference = 691;
-    if (!pitchInfo){
-      pitchNameEl.textContent = '--';
-      pitchCentsEl.textContent = '0 cent';
-      ringBar.style.strokeDashoffset = circumference;
-      ringBar.style.stroke = 'var(--accent-color)';
-      return;
-    }
-
-    pitchNameEl.textContent = pitchInfo.name;
-    const cVal = Math.round(pitchInfo.cents);
-    pitchCentsEl.textContent = `${cVal > 0 ? '+' : ''}${cVal} cent`;
-
-    // Stability calculation relative to pitch closeness
-    const absCents = Math.abs(pitchInfo.cents);
-    const accuracy = Math.max(0, 100 - absCents * 2);
-    stabilityBuffer.push(accuracy);
-    if (stabilityBuffer.length > 30) stabilityBuffer.shift();
-
-    const avgScore = Math.round(stabilityBuffer.reduce((a,b)=>a+b, 0) / stabilityBuffer.length);
-    scoreDisplayEl.textContent = `安定度: ${avgScore}%`;
-
-    const offset = circumference - (accuracy / 100) * circumference;
-    ringBar.style.strokeDashoffset = offset;
-
-    if (accuracy > 80) ringBar.style.stroke = 'var(--accent-gold)';
-    else if (accuracy > 50) ringBar.style.stroke = 'var(--accent-color)';
-    else ringBar.style.stroke = 'var(--accent-pink)';
+  function resetSession(){
+    framesInTune = 0; framesTotal = 0; streakStart = null;
+    accuracyValEl.textContent = '0%'; streakValEl.textContent = '0.0';
   }
 
-  function loopMode1(){
-    if (!mode1Active) return;
-    const buf = new Float32Array(analyser.fftSize);
-    analyser.getFloatTimeDomainData(buf);
-    const res = detectPitch(buf, audioCtx.sampleRate);
+  function colorForCents(cents, voiced){
+    if (!voiced) return 'rgba(166,172,201,0.35)';
+    const abs = Math.abs(cents);
+    if (abs < 12) return '#e3a94c';
+    if (cents < 0) return '#5b9dd6';
+    return '#e2705f';
+  }
 
-    if (res.pitch) {
-      const info = pitchToNoteInfo(res.pitch);
-      updateRing(info);
+  function drawRing(cents, voiced){
+    const w = ringCanvas.width, h = ringCanvas.height;
+    const cx = w/2, cy = h/2, radius = w/2 - 16;
+    ringCtx.clearRect(0,0,w,h);
+    const startAngle = Math.PI * 0.75, endAngle = Math.PI * 2.25;
+    ringCtx.beginPath(); ringCtx.arc(cx,cy,radius,startAngle,endAngle);
+    ringCtx.strokeStyle = 'rgba(255,255,255,0.08)'; ringCtx.lineWidth = 14; ringCtx.lineCap='round'; ringCtx.stroke();
+    const midAngle = (startAngle+endAngle)/2;
+    ringCtx.beginPath(); ringCtx.arc(cx,cy,radius,midAngle-0.05,midAngle+0.05);
+    ringCtx.strokeStyle='rgba(227,169,76,0.5)'; ringCtx.lineWidth=14; ringCtx.stroke();
+    const clamped = Math.max(-50, Math.min(50, cents));
+    const t = (clamped+50)/100;
+    const valueAngle = startAngle + t*(endAngle-startAngle);
+    const color = colorForCents(cents, voiced);
+    ringCtx.beginPath(); ringCtx.arc(cx,cy,radius,midAngle,valueAngle, valueAngle<midAngle);
+    ringCtx.strokeStyle=color; ringCtx.lineWidth=14; ringCtx.lineCap='round';
+    ringCtx.shadowColor=color; ringCtx.shadowBlur = voiced?14:0; ringCtx.stroke(); ringCtx.shadowBlur=0;
+    const dotX = cx + radius*Math.cos(valueAngle), dotY = cy + radius*Math.sin(valueAngle);
+    ringCtx.beginPath(); ringCtx.arc(dotX,dotY,7,0,Math.PI*2);
+    ringCtx.fillStyle = voiced? '#f3efe6':'rgba(243,239,230,0.4)'; ringCtx.fill();
+  }
+
+  function practiceUpdate(freq){
+    const voiced = freq > 0;
+    let cents = 0;
+    if (voiced){
+      const detectedMidi = midiFromFreq(freq);
+      cents = (detectedMidi - targetMidi) * 100;
+      smoothedCents += (cents - smoothedCents) * 0.35;
+      noteNameEl.textContent = noteLabelFromMidi(detectedMidi);
+      freqValEl.textContent = freq.toFixed(1) + ' Hz';
+      const centsAbs = Math.abs(Math.round(cents));
+      if (centsAbs < 12){ centsValEl.textContent='ぴったり'; centsValEl.style.color='#e3a94c'; }
+      else { centsValEl.textContent=(cents>0?'+':'')+Math.round(cents)+' cent'; centsValEl.style.color = cents>0?'#e2705f':'#5b9dd6'; }
+      framesTotal++;
+      if (Math.abs(cents) < 15){ framesInTune++; if (streakStart===null) streakStart=performance.now(); }
+      else streakStart = null;
     } else {
-      updateRing(null);
+      smoothedCents += (0 - smoothedCents) * 0.15;
+      noteNameEl.textContent='ー'; freqValEl.textContent='0.0 Hz'; centsValEl.textContent='';
+      streakStart = null;
     }
-    requestAnimationFrame(loopMode1);
+    drawRing(smoothedCents, voiced);
+    const streakSec = streakStart ? (performance.now()-streakStart)/1000 : 0;
+    streakValEl.textContent = streakSec.toFixed(1);
+    if (streakSec > bestStreak){ bestStreak = streakSec; bestValEl.textContent = bestStreak.toFixed(1); saveBest(bestStreak); }
+    if (framesTotal > 0) accuracyValEl.textContent = Math.round((framesInTune/framesTotal)*100) + '%';
   }
 
-  micBtn1.addEventListener('click', async () => {
-    try {
-      if (!mode1Active) {
-        await ensureMic();
-        mode1Active = true;
-        micBtn1.textContent = 'マイク停止';
-        micBtn1.classList.add('active-state');
-        statusMsg1.textContent = '音声解析中… 目標音高をロングトーンで出しましょう。';
-        loopMode1();
-      } else {
-        mode1Active = false;
-        micBtn1.textContent = 'マイク起動';
-        micBtn1.classList.remove('active-state');
-        statusMsg1.textContent = '停止中';
-        updateRing(null);
-      }
-    } catch(e) {
-      statusMsg1.textContent = 'マイクエラー: ' + e.message;
+  function practiceLoop(){
+    analyser.getFloatTimeDomainData(dataArray);
+    const freq = autoCorrelate(dataArray, audioCtx.sampleRate);
+    practiceUpdate(freq);
+    practiceRaf = requestAnimationFrame(practiceLoop);
+  }
+
+  async function startPractice(){
+    try{
+      statusMsg.textContent = 'マイクへのアクセスを許可してください…';
+      await ensureMic();
+      practicing = true;
+      micBtn.textContent = 'マイクを停止する';
+      micBtn.classList.add('active-state');
+      statusMsg.textContent = '声を出してみましょう。目標の音に合わせてください。';
+      resetSession();
+      practiceLoop();
+    } catch(e){
+      statusMsg.textContent = 'マイクエラー: ' + e.message;
     }
-  });
+  }
 
+  function stopPractice(){
+    if (!practicing) return;
+    practicing = false;
+    if (practiceRaf) cancelAnimationFrame(practiceRaf);
+    micBtn.textContent = 'マイクを開始する';
+    micBtn.classList.remove('active-state');
+    statusMsg.textContent = '';
+    drawRing(0, false);
+  }
 
-  // --- MODE 2 LOGIC (Realtime Technique Analysis) ---
+  micBtn.addEventListener('click', () => { practicing ? stopPractice() : startPractice(); });
+
+  async function loadBest(){
+    try{
+      const saved = localStorage.getItem('pitch-ring:best-streak');
+      if (saved){ bestStreak = parseFloat(saved)||0; bestValEl.textContent = bestStreak.toFixed(1); }
+    } catch(e){}
+  }
+  async function saveBest(value){
+    try{ localStorage.setItem('pitch-ring:best-streak', String(value.toFixed(1))); } catch(e){}
+  }
+
+  // ============ MODE 2: TECHNIQUE ANALYSIS ============
   const recBtn = document.getElementById('recBtn');
+  const recTimer = document.getElementById('recTimer');
   const statusMsg2 = document.getElementById('statusMsg2');
-  const eventListEl = document.getElementById('eventList');
-  const chartCanvas = document.getElementById('pitchChart');
+  const chartCanvas = document.getElementById('chart');
   const chartCtx = chartCanvas.getContext('2d');
+  const legendEl = document.getElementById('legend');
+  const eventListEl = document.getElementById('eventList');
+
+  const TYPE_INFO = {
+    'shakuri':        { label: 'しゃくり',     color: '#5b9dd6' },
+    'gyaku-shakuri':  { label: '逆しゃくり',   color: '#8f7fe0' },
+    'kobushi':        { label: 'こぶし',       color: '#e3a94c' },
+    'gyaku-kobushi':  { label: '逆こぶし',     color: '#e2705f' },
+    'hammering':      { label: 'ハンマリング', color: '#4fd1c5' },
+    'vibrato':        { label: 'ビブラート',   color: '#9bd66b' },
+    'accent':         { label: 'アクセント',   color: '#ff6f91' },
+  };
+
+  function buildLegend(){
+    legendEl.innerHTML = '';
+    Object.values(TYPE_INFO).forEach(info => {
+      const span = document.createElement('span');
+      span.innerHTML = `<i style="background:${info.color}"></i>${info.label}`;
+      legendEl.appendChild(span);
+    });
+  }
+  buildLegend();
 
   let streaming = false;
-  let streamRaf = null;
+  let streamRaf;
+  let streamStartPerf = 0;
   let liveBuffer = [];
   let currentPhrase = [];
+  let silenceStart = null;
   let allEvents = [];
   let emittedKeys = new Set();
-  const WINDOW_SEC = 5;
-  let streamStartPerf = 0;
+  let frameCounter = 0;
+  const WINDOW_SEC = 6;
+  const ANALYZE_EVERY_N_FRAMES = 6;
 
   function streamLoop(){
-    if (!streaming) return;
+    analyser.getFloatTimeDomainData(dataArray);
+    const freq = autoCorrelate(dataArray, audioCtx.sampleRate);
+    const rms = rmsOf(dataArray);
+    const now = performance.now();
+    const t = (now - streamStartPerf) / 1000;
+    const voiced = freq > 0;
+    const cents = voiced ? 1200 * Math.log2(freq/440) : null;
+    const sample = { t, cents, rms, voiced };
 
-    const buf = new Float32Array(analyser.fftSize);
-    analyser.getFloatTimeDomainData(buf);
-    const res = detectPitch(buf, audioCtx.sampleRate);
-    const nowT = (performance.now() - streamStartPerf) / 1000;
-
-    let centsVal = null;
-    if (res.pitch){
-      const midi = 69 + 12 * Math.log2(res.pitch / 440);
-      centsVal = midi * 100;
-    }
-
-    const sample = { t: nowT, voiced: !!res.pitch, cents: centsVal, rms: res.rms };
     liveBuffer.push(sample);
+    while (liveBuffer.length && liveBuffer[0].t < t - WINDOW_SEC - 1) liveBuffer.shift();
 
-    // Keep memory clean
-    if (liveBuffer.length > 1000) liveBuffer.shift();
-
-    if (sample.voiced){
+    if (voiced){
       currentPhrase.push(sample);
+      silenceStart = null;
     } else {
-      if (currentPhrase.length > 0){
-        processPhrase(currentPhrase);
+      if (silenceStart === null) silenceStart = t;
+      if (t - silenceStart >= 0.15 && currentPhrase.length){
+        runIncrementalAnalysis();
         currentPhrase = [];
       }
     }
 
-    if (currentPhrase.length >= 10){
-      processPhrase(currentPhrase);
+    frameCounter++;
+    if (currentPhrase.length >= 4 && frameCounter % ANALYZE_EVERY_N_FRAMES === 0){
+      runIncrementalAnalysis();
     }
 
-    drawLiveChart(nowT);
+    recTimer.textContent = '計測中… ' + t.toFixed(1) + '秒';
+    drawLiveChart(t);
     streamRaf = requestAnimationFrame(streamLoop);
   }
 
-  function processPhrase(phrase){
-    const detected = analyzePhrase(phrase);
-    detected.forEach(ev => {
-      const key = `${ev.type}_${ev.time.toFixed(1)}`;
+  function runIncrementalAnalysis(){
+    if (currentPhrase.length < 4) return;
+    const events = analyzePhrase(currentPhrase);
+    events.forEach(ev => {
+      const key = ev.type + '-' + Math.round(ev.time * 20);
       if (!emittedKeys.has(key)){
         emittedKeys.add(key);
         allEvents.push(ev);
@@ -517,11 +527,11 @@
     const item = document.createElement('div');
     item.className = 'event-item';
     item.innerHTML = `
-      <div style="display:flex; align-items:center;">
-        <div class="dot" style="background:${info.color}"></div>
+      <div class="dot" style="background:${info.color}"></div>
+      <div class="ev-body">
         <div class="ev-type" style="color:${info.color}">${info.label}</div>
+        <div class="ev-detail">${ev.detail || ''}</div>
       </div>
-      <div style="font-size:0.8rem; color:var(--text-secondary);">${ev.detail || ''}</div>
       <div class="ev-time">${ev.time.toFixed(1)}s</div>
     `;
     eventListEl.insertBefore(item, eventListEl.firstChild);
@@ -535,7 +545,6 @@
     const maxT = currentT;
     const tToX = t => ((t - minT) / (maxT - minT)) * w;
 
-    // Grid lines
     chartCtx.strokeStyle = 'rgba(255,255,255,0.05)';
     chartCtx.lineWidth = 1;
     for (let c = -2400; c <= 2400; c += 100){
@@ -545,13 +554,11 @@
       }
     }
 
-    // Centered reference line
     chartCtx.strokeStyle = 'rgba(227,169,76,0.3)';
     chartCtx.beginPath(); chartCtx.moveTo(0, h/2); chartCtx.lineTo(w, h/2); chartCtx.stroke();
 
     if (!liveBuffer.length) return;
 
-    // Draw pitch line
     chartCtx.lineWidth = 2.5;
     chartCtx.strokeStyle = '#5b9dd6';
     chartCtx.beginPath();
@@ -571,7 +578,6 @@
     }
     if (drawing) chartCtx.stroke();
 
-    // Draw detected event markers on chart
     allEvents.forEach(ev => {
       if (ev.time >= minT && ev.time <= maxT){
         const x = tToX(ev.time);
@@ -585,15 +591,15 @@
     });
   }
 
-  // ---- ADJUSTED TECHNIQUE DETECTION ALGORITHMS ----
+  // ---- TECHNIQUE DETECTION ALGORITHMS ----
   function analyzePhrase(phrase){
     const events = [];
-    if (phrase.length < 3) return events;
+    if (phrase.length < 5) return events;
 
     const dt = phrase[phrase.length - 1].t - phrase[0].t;
     if (dt <= 0) return events;
 
-    // 1. Shakuri & Gyaku-shakuri (Onset pitch scooping / dropping)
+    // 1. Shakuri & Gyaku-shakuri
     const onsetSpan = phrase.filter(s => s.t - phrase[0].t <= 0.35);
     if (onsetSpan.length >= 3){
       const cents = onsetSpan.map(s => s.cents);
@@ -605,13 +611,13 @@
       }
     }
 
-    // 2. Kobushi & Gyaku-kobushi (Relaxed Threshold for smoother detection)
+    // 2. Kobushi & Gyaku-kobushi (★こぶし判定を緩めた調整版★)
     for (let i = 2; i < phrase.length - 2; i++){
       const prev = phrase[i-2].cents, curr = phrase[i].cents, next = phrase[i+2].cents;
       const t = phrase[i].t;
       const dtLocal = phrase[i+2].t - phrase[i-2].t;
       
-      // 時間幅: 0.05秒〜0.50秒 / 音程差: 40〜350セント（半音弱〜3半音）
+      // 時間幅 0.05s〜0.50s、音程差 40cent〜 に変更して拾いやすく調整
       if (dtLocal > 0.05 && dtLocal < 0.50){
         const dip = curr - ((prev + next) / 2);
         if (dip <= -40 && dip >= -350){
@@ -622,7 +628,7 @@
       }
     }
 
-    // 3. Vibrato (Periodic pitch modulation 4-8.5Hz)
+    // 3. Vibrato
     if (phrase.length >= 10){
       let zeroCrossings = 0;
       const mean = phrase.reduce((a, b) => a + b.cents, 0) / phrase.length;
@@ -637,3 +643,55 @@
         if (depth >= 12 && depth <= 120){
           events.push({ type: 'vibrato', time: phrase[0].t, detail: `${rate.toFixed(1)}Hz / ±${Math.round(depth)}c` });
         }
+      }
+    }
+
+    // 4. Accent
+    for (let i = 1; i < phrase.length; i++){
+      const dRms = phrase[i].rms - phrase[i-1].rms;
+      if (dRms > 0.06){
+        events.push({ type: 'accent', time: phrase[i].t, detail: `アタック` });
+      }
+    }
+
+    return events;
+  }
+
+  async function startStreaming(){
+    try{
+      statusMsg2.textContent = 'マイクへのアクセスを許可してください…';
+      await ensureMic();
+      streaming = true;
+      recBtn.textContent = '分析を停止する';
+      recBtn.classList.add('active-state');
+      statusMsg2.textContent = '声を出すと、ピッチ軌跡とテクニックがリアルタイム表示されます。';
+      
+      streamStartPerf = performance.now();
+      liveBuffer = []; currentPhrase = []; allEvents = []; emittedKeys.clear();
+      eventListEl.innerHTML = '<div class="empty-note">検出されたテクニックがここに表示されます</div>';
+      
+      streamLoop();
+    } catch(e){
+      statusMsg2.textContent = 'マイクエラー: ' + e.message;
+    }
+  }
+
+  function stopStreaming(){
+    if (!streaming) return;
+    streaming = false;
+    if (streamRaf) cancelAnimationFrame(streamRaf);
+    recBtn.textContent = 'リアルタイム分析を開始する';
+    recBtn.classList.remove('active-state');
+    statusMsg2.textContent = '';
+    recTimer.textContent = '';
+  }
+
+  recBtn.addEventListener('click', () => { streaming ? stopStreaming() : startStreaming(); });
+
+  // Init
+  buildNoteButtons();
+  loadBest();
+})();
+</script>
+</body>
+</html>
